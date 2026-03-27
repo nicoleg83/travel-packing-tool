@@ -1,0 +1,222 @@
+.trip-form {
+  background: #fff;
+  border-bottom: 1px solid #e5e5e5;
+  padding: 14px 24px;
+  flex-shrink: 0;
+}
+
+/* Destinations */
+.destinations-section {
+  margin-bottom: 10px;
+}
+
+.destination-row {
+  margin-bottom: 6px;
+}
+
+.stop-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #aaa;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.dest-fields {
+  display: grid;
+  grid-template-columns: 1fr auto 140px 140px auto;
+  gap: 10px;
+  align-items: end;
+}
+
+/* No return date (day trip) */
+.dest-fields.no-return {
+  grid-template-columns: 1fr auto 140px auto;
+}
+
+/* No remove button */
+.dest-fields:not(:has(.remove-btn)) {
+  grid-template-columns: 1fr auto 140px 140px;
+}
+.dest-fields.no-return:not(:has(.remove-btn)) {
+  grid-template-columns: 1fr auto 140px;
+}
+
+/* Stop type toggle */
+.stop-type-toggle {
+  display: flex;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #fafafa;
+  height: 34px;
+}
+
+.stop-type-btn {
+  flex: 1;
+  border: none;
+  background: none;
+  padding: 0 10px;
+  font-size: 12px;
+  color: #888;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
+}
+
+.stop-type-btn + .stop-type-btn {
+  border-left: 1px solid #ddd;
+}
+
+.stop-type-btn.active {
+  background: #1a1a1a;
+  color: #fff;
+}
+
+.stop-type-btn:not(.active):hover {
+  background: #f0f0f0;
+  color: #333;
+}
+
+.remove-btn {
+  background: none;
+  border: 1px solid #e5e5e5;
+  color: #aaa;
+  border-radius: 6px;
+  width: 32px;
+  height: 32px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.15s, color 0.15s;
+  margin-bottom: 1px;
+}
+.remove-btn:hover { border-color: #dc2626; color: #dc2626; }
+
+.add-dest-btn {
+  background: none;
+  border: none;
+  font-size: 12px;
+  color: #888;
+  padding: 4px 0;
+  text-decoration: underline;
+  text-decoration-color: #ddd;
+  transition: color 0.15s;
+}
+.add-dest-btn:hover { color: #1a1a1a; }
+
+/* Options row */
+.options-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.options-row .field.full {
+  flex: 1;
+  min-width: 200px;
+}
+
+/* Fields */
+.field { display: flex; flex-direction: column; gap: 4px; }
+
+.field label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.optional { font-weight: 400; text-transform: none; letter-spacing: 0; color: #bbb; }
+
+.field input,
+.field select,
+.field textarea {
+  padding: 7px 10px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: #fafafa;
+  color: #1a1a1a;
+  font-size: 14px;
+  transition: border-color 0.15s;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  outline: none;
+  border-color: #1a1a1a;
+  background: #fff;
+}
+
+.field textarea { resize: vertical; line-height: 1.5; font-family: inherit; }
+
+/* Gender toggle */
+.gender-toggle {
+  display: flex;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #fafafa;
+}
+
+.gender-btn {
+  flex: 1;
+  border: none;
+  background: none;
+  padding: 7px 10px;
+  font-size: 13px;
+  color: #888;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.gender-btn + .gender-btn {
+  border-left: 1px solid #ddd;
+}
+
+.gender-btn.active {
+  background: #1a1a1a;
+  color: #fff;
+}
+
+.gender-btn:not(.active):hover { background: #f0f0f0; color: #333; }
+
+/* Error & submit */
+.form-error {
+  font-size: 12px;
+  color: #dc2626;
+  margin-bottom: 8px;
+}
+
+.btn-generate {
+  background: #1a1a1a;
+  color: #fff;
+  border: none;
+  padding: 9px 20px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.15s;
+}
+
+.btn-generate:hover:not(:disabled) { background: #333; }
+.btn-generate:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }

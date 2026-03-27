@@ -1,0 +1,101 @@
+.outfit-slot {
+  padding: var(--sp-md);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-xs);
+}
+
+.outfit-slot:last-child {
+  border-bottom: none;
+}
+
+/* ─── Header row ───────────────────────────────────────────────────────── */
+.slot-header {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-sm);
+}
+
+.slot-time {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--faint);
+  flex-shrink: 0;
+}
+
+/* ─── Outfit type pills ────────────────────────────────────────────────── */
+.outfit-pill {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 9px;
+  border-radius: var(--r-full);
+}
+
+.pill-formal   { background: #DBEAFE; color: #1E3A8A; }
+.pill-business { background: #FEF3C7; color: #92400E; }
+.pill-casual   { background: #EDE8F5; color: #5C4D8A; }
+.pill-transit  { background: #EDEBE7; color: #7A7062; }
+.pill-active   { background: #FCE8D5; color: #7A3E1A; }
+
+/* ─── Items list ───────────────────────────────────────────────────────── */
+.outfit-items {
+  list-style: none;
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.8;
+}
+
+.outfit-items li::before {
+  content: '·  ';
+  color: var(--faint);
+}
+
+/* ─── Skeleton loading ─────────────────────────────────────────────────── */
+.slot-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-xs);
+  padding: var(--sp-xs) 0;
+}
+
+.skeleton-line {
+  height: 14px;
+  width: 100%;
+}
+
+/* ─── Error ────────────────────────────────────────────────────────────── */
+.slot-error {
+  font-size: 11px;
+  color: var(--error);
+  background: var(--error-lt);
+  border-radius: var(--r-sm);
+  padding: 3px var(--sp-sm);
+}
+
+/* ─── Regen button ─────────────────────────────────────────────────────── */
+.slot-regen {
+  align-self: flex-start;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 3px 10px;
+  transition: color 120ms, border-color 120ms;
+  margin-top: var(--sp-xs);
+}
+
+.slot-regen:hover:not(:disabled) {
+  color: var(--text);
+  border-color: var(--muted);
+}
+
+.slot-regen:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

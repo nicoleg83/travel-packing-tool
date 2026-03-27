@@ -1,0 +1,69 @@
+.day-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ─── Header ───────────────────────────────────────────────────────────── */
+.day-card-header {
+  padding: var(--sp-sm) var(--sp-md);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--sp-xs);
+}
+
+.day-date {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  flex: 1;
+}
+
+.day-name {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.day-num {
+  font-family: var(--font-serif);
+  font-size: 22px;
+  color: var(--text);
+  line-height: 1;
+}
+
+.day-label-text {
+  font-family: var(--font-serif);
+  font-size: 16px;
+  color: var(--text);
+}
+
+.day-temp {
+  font-size: 11px;
+  color: var(--muted);
+  background: var(--accent-lt);
+  border-radius: var(--r-full);
+  padding: 2px var(--sp-sm);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.day-events {
+  width: 100%;
+  font-size: 11px;
+  color: var(--muted);
+  font-style: italic;
+  padding-top: 2px;
+}
+
+/* ─── Outfit slots container ───────────────────────────────────────────── */
+.day-outfits {
+  flex: 1;
+}
