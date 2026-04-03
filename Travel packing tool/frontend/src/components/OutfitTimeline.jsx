@@ -1,5 +1,5 @@
 import { useState, Fragment } from 'react'
-import { Plane, Sun, Moon, Dumbbell, RefreshCw, Cloud, BarChart2 } from 'lucide-react'
+import { Plane, Sun, Moon, Dumbbell, RefreshCw, Cloud, BarChart2, ChevronLeft, ChevronRight } from 'lucide-react'
 import DayCard from './DayCard'
 import { API_URL } from '../api.js'
 import './OutfitTimeline.css'
@@ -71,17 +71,24 @@ function getWeatherForDay(weatherArr, dayDate) {
   )
 }
 
+const PAGE_SIZE = 5
+
 export default function OutfitTimeline({ days, tripContext, currentPlan, onRegenerate, includeWorkouts = true }) {
   const [regenSlot, setRegenSlot] = useState(null) // `${date}-${rowKey}`
+  const [page, setPage] = useState(0)
 
   if (!days?.length) return null
+
+  // Pagination
+  const totalPages = Math.ceil(days.length / PAGE_SIZE)
+  const visibleDays = days.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE)
 
   // Filter WORKOUT row when workouts are disabled
   const activeRows = includeWorkouts
     ? ROW_DEFS
     : ROW_DEFS.filter(r => r.key !== 'WORKOUT')
 
-  const colCount = days.length
+  const colCount = visibleDays.length
 
   async function handleSlotRegen(day, outfit, rowKey) {
     const slotKey = `${day.date || day.label}-${rowKey}`
@@ -154,6 +161,31 @@ export default function OutfitTimeline({ days, tripContext, currentPlan, onRegen
 
       {/* ── Desktop: calendar grid ───────────────────────────────────── */}
       <div className="cal-scroll-inner desktop-cal">
+        {/* Pagination controls */}
+        {totalPages > 1 && (
+          <div className="cal-pagination">
+            <button
+              className="cal-page-btn"
+              onClick={() => setPage(p => Math.max(0, p - 1))}
+              disabled={page === 0}
+              aria-label="Previous days"
+            >
+              <ChevronLeft size={14} />
+            </button>
+            <span className="cal-page-label">
+              Days {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, days.length)} of {days.length}
+            </span>
+            <button
+              className="cal-page-btn"
+              onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+              disabled={page === totalPages - 1}
+              aria-label="Next days"
+            >
+              <ChevronRight size={14} />
+            </button>
+          </div>
+        )}
+
         <div
           className="cal-grid"
           style={{ gridTemplateColumns: `80px repeat(${colCount}, 170px)` }}
@@ -162,7 +194,7 @@ export default function OutfitTimeline({ days, tripContext, currentPlan, onRegen
           <div className="g-corner" />
 
           {/* ── Column headers ──────────────────────────────────────── */}
-          {days.map((day, i) => {
+          {visibleDays.map((day, i) => {
             let dow = ''
             let dateNum = day.label || `Day ${i + 1}`
             if (day.date) {
@@ -203,7 +235,7 @@ export default function OutfitTimeline({ days, tripContext, currentPlan, onRegen
               </div>
 
               {/* One cell per day */}
-              {days.map((day, dayIndex) => {
+              {visibleDays.map((day, dayIndex) => {
                 const outfit = day.outfits?.find(o => getRow(o.type, o.time) === key)
                 const slotKey = `${day.date || day.label}-${key}`
                 const isRegening = regenSlot === slotKey
