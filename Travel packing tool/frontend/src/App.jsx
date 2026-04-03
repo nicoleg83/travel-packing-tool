@@ -496,14 +496,6 @@ function App() {
                 icon={<MapPin size={10} />}
                 onEdit={v => handleChipEdit({ field: 'city', destIndex: i, value: v })}
               />
-              {dest.departureDate && (
-                <EditableDateChip
-                  dest={dest}
-                  onEdit={({ departureDate, returnDate }) =>
-                    handleChipEdit({ field: 'dates', destIndex: i, departureDate, returnDate })
-                  }
-                />
-              )}
             </span>
           ))}
           {tripContext?.gender && (
