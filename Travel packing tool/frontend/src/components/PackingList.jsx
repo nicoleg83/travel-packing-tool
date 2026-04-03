@@ -133,7 +133,7 @@ export default function PackingList({
       <div className={`packing-scroll${multiColumn ? ' packing-scroll--multi' : ''}`}>
         <div className="packing-header">
           <div className="packing-title-row">
-            <ListChecks size={13} />
+            <ListChecks size={15} className="packing-title-icon" />
             <span className="packing-title">Packing List</span>
           </div>
           <div className="packing-header-right">
