@@ -1,5 +1,31 @@
 import { useState, Fragment } from 'react'
-import { Plane, Sun, Moon, Dumbbell, RefreshCw, Cloud, BarChart2, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Plane, Sun, Moon, Dumbbell, RefreshCw, BarChart2, ChevronLeft, ChevronRight } from 'lucide-react'
+
+const WEATHER_EMOJI = {
+  'clear sky': '☀️', 'mainly clear': '🌤️', 'partly cloudy': '⛅', 'overcast': '☁️',
+  'foggy': '🌫️', 'icy fog': '🌫️', 'haze': '🌫️',
+  'light drizzle': '🌦️', 'drizzle': '🌦️', 'heavy drizzle': '🌧️',
+  'light rain': '🌧️', 'rain': '🌧️', 'moderate rain': '🌧️', 'heavy rain': '🌧️',
+  'freezing rain': '🌨️', 'freezing drizzle': '🌨️',
+  'light snow': '🌨️', 'snow': '❄️', 'heavy snow': '❄️', 'snow grains': '🌨️',
+  'light rain showers': '🌦️', 'rain showers': '🌦️', 'showers': '🌦️', 'heavy showers': '🌧️',
+  'snow showers': '🌨️', 'heavy snow showers': '🌨️',
+  'light thunderstorm': '🌩️', 'thunderstorm': '⛈️', 'thunderstorm w/ hail': '⛈️', 'heavy thunderstorm': '⛈️',
+  'variable conditions': '🌤️', 'windy': '💨',
+}
+function calWeatherEmoji(weatherStr) {
+  if (!weatherStr) return null
+  const lower = weatherStr.toLowerCase()
+  for (const [key, emoji] of Object.entries(WEATHER_EMOJI)) {
+    if (lower.includes(key)) return emoji
+  }
+  if (/rain|shower/i.test(weatherStr)) return '🌧️'
+  if (/snow/i.test(weatherStr)) return '❄️'
+  if (/thunder/i.test(weatherStr)) return '⛈️'
+  if (/cloud/i.test(weatherStr)) return '☁️'
+  if (/clear|sun/i.test(weatherStr)) return '☀️'
+  return '🌤️'
+}
 import DayCard from './DayCard'
 import { API_URL } from '../api.js'
 import './OutfitTimeline.css'
@@ -214,7 +240,10 @@ export default function OutfitTimeline({ days, tripContext, currentPlan, onRegen
                 )}
                 {weatherEntry?.weather && !weatherEntry.weather.toLowerCase().includes('unavailable') && (
                   <div className={`col-weather${weatherEntry.isAverage ? ' col-weather--avg' : ''}`}>
-                    {weatherEntry.isAverage ? <BarChart2 size={11} /> : <Cloud size={11} />}
+                    {weatherEntry.isAverage
+                      ? <BarChart2 size={11} />
+                      : <span className="col-weather-emoji">{calWeatherEmoji(weatherEntry.weather)}</span>
+                    }
                     {weatherEntry.weather}
                     {weatherEntry.isAverage && (
                       <span className="weather-avg-tag" title={`${weatherEntry.monthLabel || 'historical'} monthly average`}>avg</span>

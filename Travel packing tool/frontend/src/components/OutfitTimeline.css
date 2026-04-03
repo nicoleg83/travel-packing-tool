@@ -87,6 +87,10 @@
   color: var(--faint);
   margin-top: 6px;
 }
+.col-weather-emoji {
+  font-size: 11px;
+  line-height: 1;
+}
 .col-weather--avg {
   color: var(--muted);
   font-style: italic;

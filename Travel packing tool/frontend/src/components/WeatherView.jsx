@@ -2,15 +2,66 @@ import { BarChart2 } from 'lucide-react'
 import './WeatherView.css'
 
 const CONDITION_EMOJI = {
-  'clear sky': '☀️', 'mainly clear': '🌤️', 'partly cloudy': '⛅', 'overcast': '☁️',
-  'foggy': '🌫️', 'icy fog': '🌫️',
-  'light drizzle': '🌦️', 'drizzle': '🌦️', 'heavy drizzle': '🌧️',
-  'light rain': '🌧️', 'rain': '🌧️', 'heavy rain': '🌧️',
-  'light snow': '❄️', 'snow': '❄️', 'heavy snow': '❄️', 'snow grains': '❄️',
-  'rain showers': '🌦️', 'showers': '🌦️', 'heavy showers': '🌧️',
-  'snow showers': '🌨️', 'heavy snow showers': '🌨️',
-  'thunderstorm': '⛈️', 'thunderstorm w/ hail': '⛈️', 'heavy thunderstorm': '⛈️',
+  // Clear
+  'clear sky': '☀️',
+  'mainly clear': '🌤️',
+  'partly cloudy': '⛅',
+  'overcast': '☁️',
+  // Fog
+  'foggy': '🌫️',
+  'icy fog': '🌫️',
+  'depositing rime fog': '🌫️',
+  // Drizzle
+  'light drizzle': '🌦️',
+  'drizzle': '🌦️',
+  'moderate drizzle': '🌦️',
+  'dense drizzle': '🌧️',
+  'heavy drizzle': '🌧️',
+  'freezing drizzle': '🌨️',
+  'heavy freezing drizzle': '🌨️',
+  // Rain
+  'light rain': '🌧️',
+  'rain': '🌧️',
+  'moderate rain': '🌧️',
+  'heavy rain': '🌧️',
+  'very heavy rain': '🌧️',
+  'freezing rain': '🌨️',
+  'heavy freezing rain': '🌨️',
+  // Snow
+  'light snow': '🌨️',
+  'snow': '❄️',
+  'moderate snow': '❄️',
+  'heavy snow': '❄️',
+  'heavy snow fall': '❄️',
+  'snow grains': '🌨️',
+  'blizzard': '❄️',
+  // Showers
+  'light rain showers': '🌦️',
+  'rain showers': '🌦️',
+  'showers': '🌦️',
+  'moderate showers': '🌦️',
+  'heavy showers': '🌧️',
+  'violent showers': '🌧️',
+  'snow showers': '🌨️',
+  'light snow showers': '🌨️',
+  'heavy snow showers': '🌨️',
+  // Thunder
+  'thunderstorm': '⛈️',
+  'light thunderstorm': '🌩️',
+  'moderate thunderstorm': '⛈️',
+  'heavy thunderstorm': '⛈️',
+  'thunderstorm w/ hail': '⛈️',
+  'thunderstorm w/ heavy hail': '⛈️',
+  'violent thunderstorm': '⛈️',
+  // Misc
   'variable conditions': '🌤️',
+  'haze': '🌫️',
+  'dust': '🌫️',
+  'smoke': '🌫️',
+  'tornado': '🌪️',
+  'hot': '🌡️',
+  'cold': '🥶',
+  'windy': '💨',
 }
 
 function conditionEmoji(cond) {
