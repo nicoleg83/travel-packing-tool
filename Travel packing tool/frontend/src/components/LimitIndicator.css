@@ -1,9 +1,9 @@
 .limit-indicator {
-  padding: 10px 14px 8px;
-  border-radius: var(--r-sm);
-  background: var(--surface);
-  border-left: 3px solid var(--border);
-  margin: 0 10px 0 0;
+  padding: 10px 14px 10px;
+  border-radius: 8px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  margin: 0;
 }
 
 /* ─── Top row: bag label + status badge ─────────────────────────── */
@@ -54,26 +54,14 @@
 }
 
 /* ─── Status colors ─────────────────────────────────────────────── */
-.limit-indicator--ok {
-  border-left-color: var(--success, #4a6741);
-}
-.limit-indicator--ok .limit-bar-fill    { background: var(--success, #4a6741); }
-.limit-indicator--ok .limit-status-badge { color: var(--success, #4a6741); }
+.limit-indicator--ok .limit-bar-fill     { background: var(--accent); }
+.limit-indicator--ok .limit-status-badge { color: var(--accent); }
 
-.limit-indicator--warn {
-  border-left-color: var(--warning, #b45309);
-}
-.limit-indicator--warn .limit-bar-fill    { background: var(--warning, #b45309); }
+.limit-indicator--warn .limit-bar-fill     { background: var(--warning, #b45309); }
 .limit-indicator--warn .limit-status-badge { color: var(--warning, #b45309); }
 
-.limit-indicator--over {
-  border-left-color: var(--error, #b91c1c);
-}
-.limit-indicator--over .limit-bar-fill    { background: var(--error, #b91c1c); }
+.limit-indicator--over .limit-bar-fill     { background: var(--error, #b91c1c); }
 .limit-indicator--over .limit-status-badge { color: var(--error, #b91c1c); }
 
-.limit-indicator--checked {
-  border-left-color: var(--accent);
-}
-.limit-indicator--checked .limit-bar-fill    { background: var(--accent); }
+.limit-indicator--checked .limit-bar-fill     { background: var(--accent); }
 .limit-indicator--checked .limit-status-badge { color: var(--accent); }
