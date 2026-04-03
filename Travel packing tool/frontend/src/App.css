@@ -294,6 +294,9 @@
 
 /* ─── Print / Export ────────────────────────────────────────────────────── */
 @media print {
+  /* Page setup */
+  @page { margin: 12mm; size: landscape; }
+
   /* Hide all chrome */
   .masthead,
   .app-sidebar-nav,
@@ -304,11 +307,17 @@
   .slot-regen,
   .outfits-sidebar,
   .sidebar-drag-handle,
-  .chat-fab {
+  .chat-fab,
+  .cal-pagination,
+  .packing-header-right,
+  .summary-strip {
     display: none !important;
   }
 
-  /* Reset scroll containers to full-page block layout */
+  /* Full-page body */
+  html, body { margin: 0; padding: 0; background: #fff; }
+
+  /* Reset all scroll containers to block flow */
   .app-working,
   .app-body,
   .app-content,
@@ -316,14 +325,22 @@
   .packing-view,
   .calendar-panel,
   .timeline-scroll,
-  .packing-scroll {
+  .cal-scroll-inner,
+  .packing-scroll,
+  .panel {
     display: block !important;
     overflow: visible !important;
     height: auto !important;
+    min-height: 0 !important;
     width: 100% !important;
+    flex: none !important;
   }
 
-  /* Remove sticky so headers repeat correctly */
+  /* Calendar: show ALL days (override pagination — visibleDays = days in print) */
+  .desktop-cal { display: block !important; }
+  .mobile-day-stack { display: none !important; }
+
+  /* Remove sticky positioning */
   .g-col-head,
   .g-row-label,
   .g-corner,
@@ -331,19 +348,26 @@
     position: static !important;
   }
 
-  /* Fit the grid to the page */
+  /* Fit grid to full page width; auto-size columns */
   .cal-grid {
-    width: 100%;
-    overflow: visible;
+    display: grid !important;
+    grid-template-columns: 60px repeat(auto-fit, minmax(0, 1fr)) !important;
+    width: 100% !important;
+    overflow: visible !important;
+    font-size: 9px;
   }
-  .cal-scroll-inner {
-    padding: 0;
-    overflow: visible;
+
+  /* Packing list: 3-column in print */
+  .packing-scroll--multi {
+    columns: 3 160px !important;
+    column-gap: 12px !important;
+    padding-bottom: 0 !important;
   }
 
   /* Page break hints */
   .weather-dest { break-inside: avoid; }
   .g-outfit { break-inside: avoid; }
+  .cat-label { break-after: avoid; }
 }
 
 /* ─── Editable chip (button variant) ───────────────────────────────────── */

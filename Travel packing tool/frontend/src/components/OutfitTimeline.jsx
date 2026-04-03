@@ -105,9 +105,10 @@ export default function OutfitTimeline({ days, tripContext, currentPlan, onRegen
 
   if (!days?.length) return null
 
-  // Pagination
+  // Pagination (disabled in print via CSS — but we also need JS to show all in print)
+  const isPrint = typeof window !== 'undefined' && window.matchMedia('print').matches
   const totalPages = Math.ceil(days.length / PAGE_SIZE)
-  const visibleDays = days.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE)
+  const visibleDays = isPrint ? days : days.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE)
 
   // Filter WORKOUT row when workouts are disabled
   const activeRows = includeWorkouts
