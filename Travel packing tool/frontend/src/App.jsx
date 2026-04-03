@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from 'react'
-import { MapPin, RefreshCw, Plus, ChevronDown, PenLine, Share2, ArrowLeft, ArrowRight } from 'lucide-react'
+import { MapPin, Plus, ChevronDown, PenLine, Share2, ArrowLeft, ArrowRight, Printer, Shirt, Package, Cloud } from 'lucide-react'
 import LandingPage from './components/LandingPage'
 import SplitView from './components/SplitView'
+import WeatherView from './components/WeatherView'
 import ErrorBoundary from './components/ErrorBoundary'
 import { API_URL } from './api.js'
 import './App.css'
@@ -143,7 +144,11 @@ function EditableDateChip({ dest, onEdit }) {
               type="date"
               className="date-field-input"
               value={dep}
-              onChange={e => setDep(e.target.value)}
+              onChange={e => {
+                const newDep = e.target.value
+                setDep(newDep)
+                if (ret && newDep > ret) setRet(newDep)
+              }}
             />
           </div>
           <div className="date-field">
@@ -176,8 +181,11 @@ function getPendingLabel(p) {
 // Confirming view — shown after parse, before generate
 function ConfirmingView({ parsedData, onEdit, onGenerate }) {
   const submitRef = useRef(false)
-  const [tripType, setTripType] = useState(parsedData.tripType || 'Leisure')
-  const [itinerary, setItinerary] = useState(parsedData.itinerary || '')
+  const [gender, setGender] = useState(parsedData.gender || 'Male')
+  const [bagType, setBagType] = useState(parsedData.bagType || 'Carry-on')
+  const [includeWorkouts, setIncludeWorkouts] = useState(
+    parsedData.itinerary ? /workout|gym|run|swim|fitness|exercise/i.test(parsedData.itinerary) : false
+  )
   const [destinations, setDestinations] = useState(parsedData.destinations || [])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -188,7 +196,7 @@ function ConfirmingView({ parsedData, onEdit, onGenerate }) {
     setLoading(true)
     setError('')
     try {
-      const params = { ...parsedData, destinations, tripType, itinerary }
+      const params = { ...parsedData, destinations, gender, bagType, includeWorkouts }
       await onGenerate(params)
     } catch (err) {
       setError(err.message || 'Something went wrong')
@@ -222,20 +230,24 @@ function ConfirmingView({ parsedData, onEdit, onGenerate }) {
         ))}
         <span className="chip-sep">·</span>
         <ChipDropdown
-          options={TRIP_TYPE_OPTIONS}
-          currentValue={tripType}
-          onSelect={setTripType}
+          options={GENDER_OPTIONS}
+          currentValue={gender}
+          onSelect={setGender}
         />
-        {itinerary && (
-          <>
-            <span className="chip-sep">·</span>
-            <EditableTextChip
-              value={itinerary}
-              icon={null}
-              onEdit={v => setItinerary(v)}
-            />
-          </>
-        )}
+        <span className="chip-sep">·</span>
+        <ChipDropdown
+          options={BAG_OPTIONS}
+          currentValue={bagType}
+          onSelect={setBagType}
+        />
+        <span className="chip-sep">·</span>
+        <button
+          className="chip chip-btn"
+          onClick={() => setIncludeWorkouts(w => !w)}
+          type="button"
+        >
+          Workouts: {includeWorkouts ? 'Yes' : 'No'}
+        </button>
       </div>
       {error && <p className="confirming-error">{error}</p>}
       <div className="confirming-actions">
@@ -256,14 +268,23 @@ function ConfirmingView({ parsedData, onEdit, onGenerate }) {
 
 function App() {
   const [view, setView] = useState('landing')
+  const [workingView, setWorkingView] = useState('outfits')
   const [input, setInput] = useState('')
   const [parsedData, setParsedData] = useState(null)
   const [results, setResults] = useState(null)
   const [tripContext, setTripContext] = useState(null)
+  const [includeWorkouts, setIncludeWorkouts] = useState(true)
   const [regenerating, setRegenerating] = useState(false)
   const [pendingChange, setPendingChange] = useState(null)
   const [confirmLoading, setConfirmLoading] = useState(false)
   const [shareCopied, setShareCopied] = useState(false)
+
+  // Sync includeWorkouts when tripContext changes
+  useEffect(() => {
+    if (tripContext?.includeWorkouts !== undefined) {
+      setIncludeWorkouts(tripContext.includeWorkouts)
+    }
+  }, [tripContext])
 
   // Restore saved plan on mount (URL param takes priority over localStorage)
   useEffect(() => {
@@ -346,6 +367,7 @@ function App() {
     setParsedData(null)
     setInput('')
     setView('landing')
+    setWorkingView('outfits')
   }
 
   async function handleRegeneratePlan() {
@@ -452,6 +474,12 @@ function App() {
 
   const destinations = tripContext?.destinations || []
 
+  const NAV_ITEMS = [
+    { id: 'outfits',  Icon: Shirt,   label: 'Outfits' },
+    { id: 'packing',  Icon: Package, label: 'Packing List' },
+    { id: 'weather',  Icon: Cloud,   label: 'Weather' },
+  ]
+
   return (
     <div className="app-working">
       <header className="masthead">
@@ -478,16 +506,6 @@ function App() {
               )}
             </span>
           ))}
-          {tripContext?.tripType && (
-            <>
-              <span className="chip-sep">·</span>
-              <ChipDropdown
-                options={TRIP_TYPE_OPTIONS}
-                currentValue={tripContext.tripType}
-                onSelect={v => handleChipEdit({ field: 'tripType', value: v })}
-              />
-            </>
-          )}
           {tripContext?.gender && (
             <>
               <span className="chip-sep">·</span>
@@ -508,24 +526,24 @@ function App() {
               />
             </>
           )}
+          <span className="chip-sep">·</span>
+          <button
+            className="chip chip-btn"
+            onClick={() => setIncludeWorkouts(w => !w)}
+            type="button"
+          >
+            Workouts: {includeWorkouts ? 'Yes' : 'No'}
+          </button>
         </div>
 
         <div className="masthead-actions">
-          <button
-            className="btn-ghost"
-            onClick={handleShare}
-            title="Share plan"
-          >
+          <button className="btn-ghost" onClick={handleShare} title="Share plan">
             <Share2 size={12} />
             {shareCopied ? 'Copied!' : 'Share'}
           </button>
-          <button
-            className="btn-ghost"
-            onClick={handleRegeneratePlan}
-            disabled={regenerating}
-          >
-            <RefreshCw size={12} />
-            {regenerating ? 'Regenerating…' : 'Regenerate plan'}
+          <button className="btn-ghost" onClick={() => window.print()} title="Print / Export">
+            <Printer size={12} />
+            Export
           </button>
           <button className="btn-filled" onClick={handleNewPlan}>
             <Plus size={12} />
@@ -558,13 +576,35 @@ function App() {
         </div>
       )}
 
-      <ErrorBoundary onReset={handleNewPlan}>
-        <SplitView
-          data={results}
-          tripContext={tripContext}
-          onRegenerate={(newData) => setResults(newData)}
-        />
-      </ErrorBoundary>
+      <div className="app-body">
+        <nav className="app-sidebar-nav">
+          {NAV_ITEMS.map(({ id, Icon, label }) => (
+            <button
+              key={id}
+              className={`sidebar-nav-btn${workingView === id ? ' sidebar-nav-btn--active' : ''}`}
+              onClick={() => setWorkingView(id)}
+            >
+              <Icon size={19} />
+              <span className="sidebar-nav-label">{label}</span>
+            </button>
+          ))}
+        </nav>
+
+        <div className="app-content">
+          <ErrorBoundary onReset={handleNewPlan}>
+            {workingView === 'weather'
+              ? <WeatherView weather={results.weather} />
+              : <SplitView
+                  data={results}
+                  tripContext={tripContext}
+                  workingView={workingView}
+                  includeWorkouts={includeWorkouts}
+                  onRegenerate={(newData) => setResults(newData)}
+                />
+            }
+          </ErrorBoundary>
+        </div>
+      </div>
     </div>
   )
 }

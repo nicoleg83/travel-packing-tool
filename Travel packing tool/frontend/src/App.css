@@ -14,6 +14,68 @@
   overflow: hidden;
 }
 
+/* ─── App body (sidebar + content) ─────────────────────────────────────── */
+.app-body {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.app-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+
+/* ─── Left sidebar nav ──────────────────────────────────────────────────── */
+.app-sidebar-nav {
+  width: 100px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: 12px 8px;
+  gap: 2px;
+  overflow-y: auto;
+}
+
+.sidebar-nav-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 12px 8px 10px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--faint);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+  width: 100%;
+}
+.sidebar-nav-btn:hover {
+  background: var(--bg);
+  color: var(--muted);
+}
+.sidebar-nav-btn--active {
+  background: var(--accent-lt);
+  color: var(--accent);
+}
+.sidebar-nav-btn--active:hover {
+  background: var(--accent-lt);
+  color: var(--accent);
+}
+.sidebar-nav-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
 /* ─── Masthead ─────────────────────────────────────────────────────────── */
 .masthead {
   flex-shrink: 0;
@@ -78,6 +140,27 @@
   display: flex;
   gap: 8px;
   flex-shrink: 0;
+}
+
+/* ─── View-switcher nav ─────────────────────────────────────────────────── */
+.masthead-viewnav {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.masthead-viewnav-btn {
+  border-color: transparent;
+  border-bottom: 2px solid transparent;
+  border-radius: 5px 5px 0 0;
+  padding-bottom: 4px;
+}
+.masthead-viewnav-btn--active {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+}
+.masthead-viewnav-btn--active:hover:not(:disabled) {
+  border-bottom-color: var(--accent);
+  color: var(--text);
 }
 
 .btn-ghost {
@@ -180,6 +263,82 @@
     justify-content: flex-start;
   }
   .masthead-actions { margin-left: auto; }
+
+  /* Sidebar becomes bottom tab bar on mobile */
+  .app-body {
+    flex-direction: column-reverse;
+  }
+  .app-sidebar-nav {
+    width: 100%;
+    flex-direction: row;
+    justify-content: space-around;
+    padding: 6px 0 8px;
+    border-right: none;
+    border-top: 1px solid var(--border);
+    gap: 0;
+  }
+  .sidebar-nav-btn {
+    flex: 1;
+    padding: 6px 4px;
+    border-radius: 6px;
+  }
+  .sidebar-nav-label {
+    font-size: 9px;
+  }
+}
+
+/* ─── Print / Export ────────────────────────────────────────────────────── */
+@media print {
+  /* Hide all chrome */
+  .masthead,
+  .app-sidebar-nav,
+  .confirm-banner,
+  .chat-panel-wrap,
+  .floating-chat-wrap,
+  .copy-btn,
+  .slot-regen,
+  .outfits-sidebar,
+  .sidebar-drag-handle,
+  .chat-fab {
+    display: none !important;
+  }
+
+  /* Reset scroll containers to full-page block layout */
+  .app-working,
+  .app-body,
+  .app-content,
+  .split-view,
+  .packing-view,
+  .calendar-panel,
+  .timeline-scroll,
+  .packing-scroll {
+    display: block !important;
+    overflow: visible !important;
+    height: auto !important;
+    width: 100% !important;
+  }
+
+  /* Remove sticky so headers repeat correctly */
+  .g-col-head,
+  .g-row-label,
+  .g-corner,
+  .packing-header {
+    position: static !important;
+  }
+
+  /* Fit the grid to the page */
+  .cal-grid {
+    width: 100%;
+    overflow: visible;
+  }
+  .cal-scroll-inner {
+    padding: 0;
+    overflow: visible;
+  }
+
+  /* Page break hints */
+  .weather-dest { break-inside: avoid; }
+  .g-outfit { break-inside: avoid; }
 }
 
 /* ─── Editable chip (button variant) ───────────────────────────────────── */
@@ -354,6 +513,36 @@
   border: 1px solid var(--accent);
 }
 .confirm-btn--ok:hover:not(:disabled) { opacity: 0.88; }
+
+/* ─── Workout toggle (confirming view + outfits sidebar) ────────────────── */
+.confirming-workout-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.confirming-workout-label {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 500;
+}
+.workout-toggle-btn {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 3px 10px;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.workout-toggle-btn--on {
+  color: var(--text);
+  background: var(--bg);
+  border-color: var(--muted);
+  font-weight: 700;
+}
 
 /* ─── Confirming view ───────────────────────────────────────────────────── */
 .confirming-hero {

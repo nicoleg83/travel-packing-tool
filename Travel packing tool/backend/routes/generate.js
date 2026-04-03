@@ -6,60 +6,257 @@ const Anthropic = require('@anthropic-ai/sdk');
 function sanitizeItinerary(raw) {
   if (!raw || typeof raw !== 'string') return '';
   return raw
-    .slice(0, 500)
+    .slice(0, 2000)
     .replace(/\bignore\b.*?\binstructions?\b/gi, '[removed]')
     .replace(/\bforget\b.*?\babove\b/gi, '[removed]')
     .replace(/<\/?[a-z][^>]*>/gi, '')
     .trim();
 }
 
-// Fetch weather from OpenWeatherMap
-async function fetchWeather(destination) {
-  const apiKey = process.env.OPENWEATHERMAP_API_KEY;
-  if (!apiKey) return { summary: 'Weather unavailable (no API key)', location: destination };
+// WMO weather code → human-readable description
+const WMO_DESCRIPTIONS = {
+  0: 'Clear sky', 1: 'Mainly clear', 2: 'Partly cloudy', 3: 'Overcast',
+  45: 'Foggy', 48: 'Icy fog',
+  51: 'Light drizzle', 53: 'Drizzle', 55: 'Heavy drizzle',
+  61: 'Light rain', 63: 'Rain', 65: 'Heavy rain',
+  71: 'Light snow', 73: 'Snow', 75: 'Heavy snow',
+  77: 'Snow grains',
+  80: 'Rain showers', 81: 'Showers', 82: 'Heavy showers',
+  85: 'Snow showers', 86: 'Heavy snow showers',
+  95: 'Thunderstorm', 96: 'Thunderstorm w/ hail', 99: 'Heavy thunderstorm',
+};
+
+function wmoToDesc(code) {
+  return WMO_DESCRIPTIONS[code] || 'Variable conditions';
+}
+
+function mostCommonCode(codes) {
+  if (!codes?.length) return 2;
+  const counts = {};
+  codes.forEach(c => { counts[c] = (counts[c] || 0) + 1; });
+  return parseInt(Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0]);
+}
+
+// Use Open-Meteo archive API for historical per-day data (fallback for trips > 16 days out)
+// Returns per-day data mapped from the same dates last year, so WeatherView can show daily cards.
+async function getMonthlyAverage(lat, lon, city, departureDate, returnDate) {
+  const depDate = new Date(departureDate + 'T12:00:00');
+  const retDate = returnDate ? new Date(returnDate + 'T12:00:00') : depDate;
+  const prevYear = depDate.getFullYear() - 1;
+  const monthName = depDate.toLocaleDateString('en-US', { month: 'short' });
+
+  // Fetch archive covering the trip range from last year
+  const startMonth = depDate.getMonth() + 1;
+  const endMonth = retDate.getMonth() + 1;
+  const startStr = `${prevYear}-${String(startMonth).padStart(2, '0')}-01`;
+  const endLastDay = new Date(prevYear, endMonth, 0).getDate();
+  const endStr = `${prevYear}-${String(endMonth).padStart(2, '0')}-${endLastDay}`;
 
   try {
-    const geoRes = await fetch(
-      `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(destination)}&limit=1&appid=${apiKey}`
-    );
-    const geoData = await geoRes.json();
-    if (!geoData.length) return { summary: `Weather data unavailable for ${destination}`, location: destination };
+    const url = `https://archive-api.open-meteo.com/v1/archive?latitude=${lat}&longitude=${lon}` +
+      `&start_date=${startStr}&end_date=${endStr}` +
+      `&daily=temperature_2m_max,temperature_2m_min,weathercode&temperature_unit=fahrenheit&timezone=UTC`;
+    const res = await fetch(url);
+    const data = await res.json();
 
-    const { lat, lon } = geoData[0];
-    const weatherRes = await fetch(
-      `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&units=imperial&cnt=8&appid=${apiKey}`
+    if (!data.daily?.time?.length) throw new Error('No archive data');
+
+    const archiveTimes = data.daily.time; // array of "YYYY-MM-DD" strings
+
+    // Map each trip day to its corresponding last-year date
+    const dailyData = [];
+    for (let dt = new Date(depDate); dt <= retDate; dt.setDate(dt.getDate() + 1)) {
+      const tripDate = dt.toISOString().slice(0, 10);
+      const prevDate = `${prevYear}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+      const idx = archiveTimes.indexOf(prevDate);
+      if (idx >= 0 && data.daily.temperature_2m_max[idx] != null) {
+        dailyData.push({
+          date: tripDate,
+          high: Math.round(data.daily.temperature_2m_max[idx]),
+          low: Math.round(data.daily.temperature_2m_min[idx]),
+          condition: wmoToDesc(data.daily.weathercode[idx]),
+        });
+      }
+    }
+
+    // Overall summary from the trip days
+    const highs = dailyData.map(d => d.high);
+    const lows = dailyData.map(d => d.low);
+    const allHighs = data.daily.temperature_2m_max.filter(v => v != null);
+    const allLows = data.daily.temperature_2m_min.filter(v => v != null);
+    const avgHigh = highs.length ? Math.round(Math.max(...highs)) : Math.round(allHighs.reduce((a, b) => a + b, 0) / allHighs.length);
+    const avgLow = lows.length ? Math.round(Math.min(...lows)) : Math.round(allLows.reduce((a, b) => a + b, 0) / allLows.length);
+    const condition = wmoToDesc(mostCommonCode(data.daily.weathercode));
+
+    return {
+      summary: `${avgLow}–${avgHigh}°F, ${condition}`,
+      location: city,
+      isAverage: true,
+      monthLabel: monthName,
+      dailyData: dailyData.length > 0 ? dailyData : null,
+    };
+  } catch (err) {
+    console.error('Archive weather error:', err.message);
+    return { summary: null, location: city, isAverage: true, monthLabel: monthName };
+  }
+}
+
+// Geocode a city name via Open-Meteo (no API key required).
+// Tries progressively shorter forms to handle hotel names, neighborhoods, etc.
+async function geocodeCity(city) {
+  const tryGeocode = async (name) => {
+    if (!name || name.length < 2) return null;
+    const r = await fetch(
+      `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=1&language=en&format=json`
     );
-    const weatherData = await weatherRes.json();
-    const temps = weatherData.list.map(i => i.main.temp);
-    const low = Math.round(Math.min(...temps));
-    const high = Math.round(Math.max(...temps));
-    const condition = weatherData.list[0].weather[0].description;
-    return { summary: `${low}–${high}°F, ${condition}`, location: destination };
+    const d = await r.json();
+    return d.results?.[0] || null;
+  };
+
+  // 1. Full name as-is
+  let result = await tryGeocode(city);
+  if (result) return result;
+
+  // 2. Strip state/country suffix: "Kahala, Oahu" → "Kahala"
+  const beforeComma = city.split(',')[0].trim();
+  if (beforeComma !== city) {
+    result = await tryGeocode(beforeComma);
+    if (result) return result;
+  }
+
+  // 3. Strip known non-geographic words (Hotel, Resort, &, at, near, etc.)
+  const stripped = beforeComma
+    .replace(/\b(hotel|resort|&|and|at|near|spa|suites?|inn|lodge|villa|club|estate|beach|ocean)\b/gi, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+  if (stripped && stripped !== beforeComma) {
+    result = await tryGeocode(stripped);
+    if (result) return result;
+  }
+
+  // 4. First two words
+  const words = (stripped || beforeComma).split(/\s+/);
+  if (words.length > 2) {
+    result = await tryGeocode(words.slice(0, 2).join(' '));
+    if (result) return result;
+  }
+
+  // 5. First word only (last resort)
+  if (words.length > 1) {
+    result = await tryGeocode(words[0]);
+    if (result) return result;
+  }
+
+  return null;
+}
+
+// Fetch weather using Open-Meteo (free, no API key required)
+// - Within 16 days: real forecast filtered to trip dates
+// - Beyond 16 days: historical monthly averages from same month last year
+// Returns null summary on failure so callers can skip display gracefully
+async function fetchWeather(destination) {
+  const city = typeof destination === 'string' ? destination : destination.city;
+  const departureDate = typeof destination === 'object' ? destination.departureDate : null;
+  const returnDate = typeof destination === 'object' ? (destination.returnDate || departureDate) : null;
+
+  try {
+    const geoResult = await geocodeCity(city);
+    if (!geoResult) {
+      console.warn(`Weather: could not geocode "${city}"`);
+      return { summary: null, location: city, isAverage: false };
+    }
+    const { latitude, longitude } = geoResult;
+
+    const refDate = departureDate || new Date().toISOString().split('T')[0];
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tripStart = new Date(refDate + 'T00:00:00');
+    const daysUntilTrip = Math.round((tripStart - today) / (1000 * 60 * 60 * 24));
+
+    if (daysUntilTrip <= 15) {
+      // Use Open-Meteo 16-day forecast with hourly temps + precip
+      const forecastRes = await fetch(
+        `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}` +
+        `&daily=temperature_2m_max,temperature_2m_min,weathercode,precipitation_probability_max` +
+        `&hourly=temperature_2m&temperature_unit=fahrenheit&timezone=auto&forecast_days=16`
+      );
+      const forecastData = await forecastRes.json();
+
+      if (!forecastData.daily?.time?.length) throw new Error('Empty forecast response');
+
+      const tripEnd = returnDate || refDate;
+      const dailyTimes = forecastData.daily.time;
+      const hourlyTemps = forecastData.hourly?.temperature_2m || [];
+
+      console.log(`[weather] ${city}: ${dailyTimes.length} forecast days, ${hourlyTemps.length} hourly pts, filtering ${refDate}–${tripEnd}`);
+
+      const relevant = dailyTimes
+        .map((date, i) => ({
+          date,
+          high: forecastData.daily.temperature_2m_max[i],
+          low: forecastData.daily.temperature_2m_min[i],
+          code: forecastData.daily.weathercode[i],
+          precipProb: forecastData.daily.precipitation_probability_max?.[i] ?? null,
+          // Hourly indices: each day is 24 hours, index i*24 is midnight
+          morning:   hourlyTemps[i * 24 + 8]  != null ? Math.round(hourlyTemps[i * 24 + 8])  : null,
+          afternoon: hourlyTemps[i * 24 + 14] != null ? Math.round(hourlyTemps[i * 24 + 14]) : null,
+          evening:   hourlyTemps[i * 24 + 20] != null ? Math.round(hourlyTemps[i * 24 + 20]) : null,
+        }))
+        .filter(d => d.date >= refDate && d.date <= tripEnd);
+
+      console.log(`[weather] ${city}: ${relevant.length} relevant days after filter`);
+
+      if (!relevant.length) {
+        return await getMonthlyAverage(latitude, longitude, city, refDate, returnDate);
+      }
+
+      const high = Math.round(Math.max(...relevant.map(d => d.high)));
+      const low = Math.round(Math.min(...relevant.map(d => d.low)));
+      const condition = wmoToDesc(mostCommonCode(relevant.map(d => d.code)));
+      const dailyData = relevant.map(d => ({
+        date: d.date,
+        high: Math.round(d.high),
+        low: Math.round(d.low),
+        condition: wmoToDesc(d.code),
+        precipProb: d.precipProb,
+        morning: d.morning,
+        afternoon: d.afternoon,
+        evening: d.evening,
+      }));
+
+      return { summary: `${low}–${high}°F, ${condition}`, location: city, isAverage: false, dailyData };
+    } else {
+      return await getMonthlyAverage(latitude, longitude, city, refDate, returnDate);
+    }
   } catch (err) {
     console.error('Weather fetch error:', err.message);
-    return { summary: 'Weather unavailable', location: destination };
+    return { summary: null, location: city, isAverage: false };
   }
 }
 
 // Carry-on item limit scales with trip length
 function carryOnLimit(totalDays) {
-  if (totalDays <= 2) return 10
-  if (totalDays <= 5) return 15
-  if (totalDays <= 9) return 20
-  return 25
+  if (totalDays <= 2) return 10;
+  if (totalDays <= 5) return 15;
+  if (totalDays <= 9) return 20;
+  return 25;
 }
+
+// Fixed item limit for checked bags — consistent across all trip lengths
+const CHECKED_BAG_LIMIT = 40;
 
 // Count calendar days across all destinations
 function countTripDays(destinations) {
-  const allDates = new Set()
+  const allDates = new Set();
   for (const d of destinations) {
-    const start = new Date(d.departureDate)
-    const end = d.stopType === 'Day trip' ? start : new Date(d.returnDate)
+    const start = new Date(d.departureDate);
+    const end = d.stopType === 'Day trip' ? start : new Date(d.returnDate);
     for (let dt = new Date(start); dt <= end; dt.setDate(dt.getDate() + 1)) {
-      allDates.add(dt.toISOString().slice(0, 10))
+      allDates.add(dt.toISOString().slice(0, 10));
     }
   }
-  return allDates.size || 1
+  return allDates.size || 1;
 }
 
 // Call Claude to generate the outfit plan
@@ -78,6 +275,9 @@ Rules:
 - For stops marked [DAY TRIP]: plan outfits only — no extra packing items needed for that stop, the traveler returns to their base
 - For stops marked [OVERNIGHT]: pack minimally (1 outfit change max)
 - TRAVEL DAY RULE (mandatory): For every date listed under "Transit dates", you MUST include a "Travel" outfit slot on that day. Use time: "Travel", type: "Transit". This outfit is worn once in-transit and gets dirty — it must appear as a separate entry in the packing list under a "Travel Day" category, never reused across other days. It should be comfortable and casual (joggers or dark jeans, soft layer, sneakers or slip-ons).
+- WORKOUT SLOTS: When includeWorkouts is true, add workout slots intelligently — NOT on every day. Skip transit days and day trip days entirely. If the itinerary mentions a specific number of workouts, use exactly that number spread evenly. Otherwise, add workouts on roughly every other eligible day (e.g. for a 7-day trip with 5 eligible days: days 1, 3, 5). Use EXACTLY: { "time": "Workout", "type": "Activewear", "items": ["..."] }. The "type" field MUST be exactly "Activewear". When includeWorkouts is false, include ZERO workout slots.
+- CLOTHING SPECIFICITY: Keep clothing descriptions generic unless the traveler specified particular items or activities. Say "slim trousers" not "charcoal wool slim-fit trousers". Say "casual sneakers" not "white low-top leather sneakers". Only get specific when the itinerary calls for it (e.g. hiking boots for a hike, wetsuit for diving).
+- DAY EVENTS: The "events" field must be very brief — 3–6 words maximum (e.g. "Business meetings", "Beach day", "Flight to NYC", "Hanauma Bay snorkeling"). No full sentences.
 - Reuse items across non-travel days to minimize packing — the goal is carry-on only
 - Keep the packing list to CLOTHING AND SHOES ONLY — no toiletries, tech, documents, or bags
 - Return ONLY valid JSON — no prose, no markdown, no extra text
@@ -114,26 +314,29 @@ Required JSON schema:
       ? ' [DAY TRIP — no overnight, no extra packing for this stop]'
       : w.stopType === 'Overnight'
       ? ' [OVERNIGHT — one night only, pack light for this stop]'
-      : ''
-    return `  - ${w.city} (${w.dates})${typeNote}: ${w.weather}`
+      : '';
+    const weatherStr = w.weather || 'Weather data unavailable — pack for typical seasonal conditions';
+    const weatherNote = w.isAverage && w.monthLabel
+      ? ` (${w.monthLabel} historical average — plan for typical seasonal conditions)`
+      : '';
+    return `  - ${w.city} (${w.dates})${typeNote}: ${weatherStr}${weatherNote}`;
   }).join('\n');
 
-  // Compute transit dates: departure date of each stop (traveling TO it) + return date of each stop (traveling FROM it)
-  const transitDateSet = new Set()
+  // Compute transit dates
+  const transitDateSet = new Set();
   for (const d of tripData.destinations) {
-    if (d.departureDate) transitDateSet.add(d.departureDate)
-    if (d.returnDate && d.stopType !== 'Day trip') transitDateSet.add(d.returnDate)
-    if (d.stopType === 'Day trip' && d.departureDate) transitDateSet.add(d.departureDate)
+    if (d.departureDate) transitDateSet.add(d.departureDate);
+    if (d.returnDate && d.stopType !== 'Day trip') transitDateSet.add(d.returnDate);
+    if (d.stopType === 'Day trip' && d.departureDate) transitDateSet.add(d.departureDate);
   }
-  const transitDates = Array.from(transitDateSet).sort().join(', ')
+  const transitDates = Array.from(transitDateSet).sort().join(', ');
 
-  const totalDays = countTripDays(tripData.destinations)
-  const baseLimit = carryOnLimit(totalDays)
-  const checkedBag = tripData.bagType === 'Checked bag'
-  const maxItems = checkedBag ? baseLimit * 2 : baseLimit
+  const totalDays = countTripDays(tripData.destinations);
+  const checkedBag = tripData.bagType === 'Checked bag';
+  const maxItems = checkedBag ? CHECKED_BAG_LIMIT : carryOnLimit(totalDays);
   const limitLine = checkedBag
-    ? `Bag type: Checked bag — the traveler is checking a bag, so you can pack more freely. Aim for completeness rather than minimalism.`
-    : `Packing list hard limit: ${maxItems} items total (clothing and shoes only). Count every qty. Stay under this number — every item must earn its place.`
+    ? `Bag type: Checked bag. Hard item limit: ${CHECKED_BAG_LIMIT} items total (clothing and shoes only). Pack a complete, varied wardrobe — no need to minimize or aggressively reuse. Aim close to the ${CHECKED_BAG_LIMIT}-item limit so the traveler has full outfit flexibility.`
+    : `Packing list hard limit: ${maxItems} items total (clothing and shoes only). Count every qty. Stay under this number — every item must earn its place.`;
 
   const userPrompt = `Destinations and weather:
 ${destinationDetails}
@@ -141,6 +344,7 @@ Transit dates (MUST include Travel outfit on each): ${transitDates}
 ${limitLine}
 Trip type: ${tripData.tripType}
 Gender: ${tripData.gender}
+Include workouts: ${tripData.includeWorkouts !== false ? 'Yes — add WORKOUT slots for any fitness/exercise/run/gym/swim activities mentioned in the itinerary' : 'No — omit all workout outfit slots'}
 Itinerary: ${sanitizeItinerary(tripData.itinerary) || 'No specific itinerary provided'}
 ${editInstruction ? `Additional constraint: ${editInstruction}` : ''}`;
 
@@ -155,7 +359,6 @@ ${editInstruction ? `Additional constraint: ${editInstruction}` : ''}`;
       });
 
       const raw = message.content[0].text;
-      // Strip markdown code fences if Claude wraps the JSON (e.g. ```json ... ```)
       const text = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
       const parsed = JSON.parse(text);
 
@@ -186,7 +389,7 @@ ${editInstruction ? `Additional constraint: ${editInstruction}` : ''}`;
 
 // POST /api/generate
 router.post('/generate', async (req, res) => {
-  const { destinations, tripType, gender, itinerary, bagType } = req.body;
+  const { destinations, tripType, gender, itinerary, bagType, includeWorkouts } = req.body;
 
   if (!destinations?.length || !tripType) {
     return res.status(400).json({ error: 'Missing required fields: destinations, tripType' });
@@ -202,16 +405,18 @@ router.post('/generate', async (req, res) => {
   }
 
   try {
-    // Fetch weather for all destinations in parallel
-    const weatherResults = await Promise.all(destinations.map(d => fetchWeather(d.city)));
+    const weatherResults = await Promise.all(destinations.map(d => fetchWeather(d)));
     const weatherSummary = destinations.map((d, i) => ({
       city: d.city,
       dates: d.stopType === 'Day trip' ? d.departureDate : `${d.departureDate} to ${d.returnDate}`,
       stopType: d.stopType || 'Stay',
       weather: weatherResults[i].summary,
+      isAverage: weatherResults[i].isAverage || false,
+      monthLabel: weatherResults[i].monthLabel || null,
+      dailyData: weatherResults[i].dailyData || null,
     }));
 
-    const tripData = { destinations, tripType, gender: gender || 'Male', itinerary, bagType: bagType || 'Carry-on' };
+    const tripData = { destinations, tripType, gender: gender || 'Male', itinerary, bagType: bagType || 'Carry-on', includeWorkouts: includeWorkouts !== false };
     const result = await generateOutfits(tripData, weatherSummary);
     res.json(result);
   } catch (err) {
@@ -229,12 +434,15 @@ router.post('/regenerate', async (req, res) => {
   }
 
   try {
-    const weatherResults = await Promise.all(originalRequest.destinations.map(d => fetchWeather(d.city)));
+    const weatherResults = await Promise.all(originalRequest.destinations.map(d => fetchWeather(d)));
     const weatherSummary = originalRequest.destinations.map((d, i) => ({
       city: d.city,
       dates: d.stopType === 'Day trip' ? d.departureDate : `${d.departureDate} to ${d.returnDate}`,
       stopType: d.stopType || 'Stay',
       weather: weatherResults[i].summary,
+      isAverage: weatherResults[i].isAverage || false,
+      monthLabel: weatherResults[i].monthLabel || null,
+      dailyData: weatherResults[i].dailyData || null,
     }));
 
     const result = await generateOutfits(originalRequest, weatherSummary, editInstruction || '');

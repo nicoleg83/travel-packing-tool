@@ -28,7 +28,7 @@ Return ONLY a JSON object with this exact shape:
 {
   "destinations": [
     {
-      "city": "City, ST",
+      "city": "Specific location name (preserve hotel names, neighborhoods, resorts — e.g. 'Kahala Resort, Oahu' not just 'Honolulu')",
       "stopType": "Stay" | "Overnight" | "Day trip",
       "departureDate": "YYYY-MM-DD",
       "returnDate": "YYYY-MM-DD"
@@ -44,7 +44,17 @@ Rules:
 - If no tripType is clear, default to "Leisure"
 - If no dates are mentioned, use the next Monday and next Friday as default departure/return
 - For a Day trip, departureDate and returnDate must be identical
-- Return exactly one destination if only one city is mentioned
+- LOCATION SPECIFICITY: Use the most specific *geocodable* location — never just the broad city when a neighborhood or area is known. Neighborhoods, beaches, and resort areas geocode well. Hotel brand names do NOT geocode — strip the brand and use the neighborhood/area. Examples:
+    • "Kahala Hotel & Resort on Oahu" → "Kahala, Oahu"  (NOT "Honolulu, HI")
+    • "Four Seasons Maui at Wailea" → "Wailea, Maui"
+    • "flying into Honolulu, staying at Waikiki Beach hotel" → "Waikiki, Oahu"
+    • "W Hotel Midtown" → "Midtown Manhattan, New York"
+  If only a broad city is mentioned with no neighborhood, use the city name as-is.
+- DAY TRIPS: If the user mentions any day excursion, beach, attraction, or day trip to a specific place, add it as a SEPARATE destination entry with stopType "Day trip" (same date for departure and return). Examples:
+    • "snorkeling at Hanauma Bay on Wednesday" → add {"city": "Hanauma Bay, Oahu", "stopType": "Day trip", "departureDate": "2026-04-08", "returnDate": "2026-04-08"}
+    • "day trip to Napa Valley on Friday" → add {"city": "Napa Valley, California", "stopType": "Day trip", ...}
+  Day trips can share a date with the main destination — that is expected and correct.
+- Return exactly one destination if only one location is mentioned (no day trips)
 - Do not include any text outside the JSON object
 
 Input:

@@ -4,6 +4,122 @@ Items identified during /plan-eng-review (2026-03-26) and /plan-design-review (2
 
 ---
 
+## v1.2 — UI Redesign *(from /plan-design-review 2026-04-02)*
+
+### Major UI Simplification — Landing Page + 4-View Architecture
+
+**What:** Two parallel simplifications: (1) strip the landing page down to its essential elements, (2) rethink the working view from a single split layout into four focused views.
+
+**Why:** Both the landing page and working view are doing too much. The landing page buries the input under templates and how-it-works sections. The working view collapses outfit planning, bag packing, and weather into one cluttered screen.
+
+---
+
+#### Landing Page Simplification
+
+**Remove entirely:**
+- Templates section ("Or start from a template" — 4 template cards)
+- How it works section (3-step explainer)
+- Example chips ("Try: Beach trip, Miami...")
+- Nav links ("How it works", "Examples", "Sign in") — keep the wordmark only in the nav
+
+**Keep:**
+- Packwise wordmark (nav, left-aligned)
+- Hero headline: "Tell me about your trip."
+- Input card: textarea + file attach button + submit button
+- Gender and bag type preference toggles (below input card — user sets these before typing)
+- Error state display
+
+**Result:** A single focused screen. Wordmark → headline → input. No scrolling needed, no distractions.
+
+---
+
+#### Masthead Simplification (working views)
+
+**Remove from masthead:**
+- "Regenerate plan" button — redundant, chat handles this ("regenerate my plan")
+- Trip type chip — it's static/read-only, not editable, so it adds noise without utility
+
+**Keep in masthead:**
+- Packwise wordmark
+- City chips (editable) + date chips (editable)
+- Gender dropdown chip (editable)
+- Bag type dropdown chip (editable)
+- View switcher: [Outfits] [Packing List] [Weather]
+- Action buttons: [Share] [Export] [New Plan]
+
+---
+
+#### Calendar (Outfits View) Simplification
+
+**Remove from calendar:**
+- Vertical month label in the corner cell — decorative, not functional
+- Events summary text in column headers (the small italic line under the date number) — truncates on longer text, redundant since user described events to generate the plan
+
+**Keep in column headers:**
+- Day of week (MON, TUE...)
+- Date number (large, Instrument Serif)
+- Weather badge (now more prominent without events text competing)
+
+**Result:** Column headers are cleaner — day + date + weather only.
+
+---
+
+#### 4-View Architecture
+
+**Architecture:**
+
+```
+MASTHEAD (all working views)
+  Packwise wordmark
+  city chip(s) · date chip(s) · gender chip · bag chip   ← editable only
+  [Outfits] [Packing List] [Weather]    ← ghost buttons; active = --accent underline + --text
+  [Share] [Export] [New Plan]
+```
+
+**View 1 — Outfits (default after generate):**
+- Left: full outfit calendar (more horizontal space without sidebar packing list)
+- Right sidebar: compact trip summary (item count + limit indicator) + Ask Packwise chat
+- Limit indicator: percentage-based color coding
+  - Green (≤100%): `--success` / `--success-lt`
+  - Yellow (101–120%): `--warning` / `--warning-lt`
+  - Red (>120%): `--error` / `--error-lt`
+- Always shows text alongside color: "18 / 25 items" (not color-only)
+- Mobile (≤768px): calendar becomes vertical day-card stack; sidebar becomes stacked column below
+
+**View 2 — Packing List:**
+- Full-width single column
+- Item limit indicator at top (same color logic)
+- Category headers + checkable items (same `.pack-item` pattern)
+- Ask Packwise chat at bottom (same component)
+
+**View 3 — Weather:**
+- Full-width, one section per destination, stacked with `--border` dividers between
+- Each section: destination name (heading) + date range + summary line + day-by-day table
+- Day table: DM Sans, `tabular-nums`, `--faint` for day labels
+- NOT a card grid — full-width sections only
+- Shows "avg" vs "live" badge (existing pattern)
+- Entry point: masthead button only
+
+**View 4 — Export (print-mode):**
+- Triggered by [Export] button in masthead
+- Opens a print-optimized layout: calendar summary left, packing list right
+- Uses `--text` on white (not parchment — printers)
+- `window.print()` fires automatically or via a visible Print button
+
+**Navigation active state spec:**
+- Default: `.btn-ghost` style (existing)
+- Active: bottom border `2px solid var(--accent)`, text color `var(--text)`
+- Hover: `--accent-lt` background tint (existing hover)
+
+**Mobile treatment (build now, not deferred):**
+- Outfits view: calendar → vertical `DayCard` stack; sidebar → full-width column below
+- Packing List + Weather views: already single-column, no changes needed
+- Touch targets: all view switch buttons min 44px height at ≤768px
+
+**Reuses:** `SplitView` pattern (narrower right panel), `PackingList` component, `OutfitTimeline`, existing weather badge logic, `.btn-ghost`, all token variables.
+
+---
+
 ## v1.1 — Post-Launch
 
 ### Export / Copy-to-Clipboard
@@ -446,37 +562,117 @@ CONFIRMED = both agree. Source: Claude main + Claude subagent (Codex unavailable
 
 ---
 
+## v1.2 — Eng Review Decisions *(from /plan-eng-review 2026-04-03)*
+
+### Architecture Decisions
+
+| # | Decision | Rationale |
+|---|----------|-----------|
+| A | One PR for all v1.2 changes | User preference; cleanups and additions clearly separated by component |
+| B | Export is a button, not a nav tab | Export has no persistent state; fires window.print() and exits; view-switcher is 3 tabs: Outfits / Packing List / Weather |
+| C | Chat stays in Packing List view | Users on Packing List view need chat access; PackingList already has it |
+| D | Mobile Weather table: overflow-x: auto | Standard pattern for tabular data on small screens |
+| E | Shared `<LimitIndicator>` component | Used in both Outfits sidebar and Packing List header; prevents threshold logic drifting |
+| F | Weather view returns dailyData from backend | generate.js fetchWeather returns [{date, high, low, condition}] for live forecasts; null for historical (isAverage: true) |
+| G | Mobile calendar: pure CSS show/hide | @media (max-width: 768px) hides grid, shows DayCard stack; user preference over useMediaQuery hook |
+| H | workingView state in App.jsx | Masthead nav lives in App.jsx; state must be co-located; reset to 'outfits' on handleNewPlan() |
+
+### Code Quality Notes (implementation reminders)
+
+- Delete `TripForm.jsx` and `TripForm.css` — orphaned dead code, not imported anywhere
+- Delete `buildMeta()` in `SplitView.jsx` — panel header goes away in v1.2
+- After LandingPage cleanup, remove orphaned lucide imports: `Briefcase`, `Sun`, `MountainSnow`
+- `workingView` must reset to `'outfits'` inside `handleNewPlan()`
+- Historical averages: WeatherView degrades to summary text when `isAverage: true` (no day table)
+
+### Failure Modes (v1.2 additions)
+
+| Codepath | Failure mode | Test? | Error handling? | Silent? | Flag |
+|---|---|---|---|---|---|
+| workingView state | Stuck on 'weather' after New Plan | NO | NO (needs reset in handleNewPlan) | YES | MEDIUM |
+| WeatherView dailyData | isAverage: true — no day table shown | NO | Graceful (show summary only) | NO | LOW |
+| Mobile Weather table | Overflow blowout on 375px | NO | CSS fix (overflow-x: auto) | YES | MEDIUM |
+| Export button | window.print() fails silently on some browsers | NO | NO | YES | LOW |
+
+### NOT in scope (v1.2)
+
+- TypeScript migration
+- Test suite (0% baseline pre-exists — separate PR)
+- v1.1 features (parse confirmation, AbortController, rate limiting)
+- `useMediaQuery` hook (pure CSS decided)
+- Persistent share URL (v2+)
+- File attachment DRY hook (deferred)
+- Footer removal on landing page (not in spec)
+- Resize handle removal (Outfits view still has sidebar)
+
+### What Already Exists (v1.2)
+
+| Sub-problem | Existing code | Reuse? |
+|---|---|---|
+| Masthead chip editing | `EditableTextChip`, `EditableDateChip`, `ChipDropdown` in App.jsx:27-168 | YES — unchanged |
+| Outfit calendar | `OutfitTimeline.jsx` — full grid, slot regen | YES — remove 2 elements only |
+| Mobile day cards | `DayCard.jsx` + `DayCard.css` | YES — show via CSS at ≤768px |
+| Packing list + chat | `PackingList.jsx` | YES — move to standalone view |
+| Weather badge (avg/live) | `weatherEntry.isAverage`, `.weather-avg-tag`, `.weather-live-tag` | YES — reuse in WeatherView |
+| Limit badge | `summary-carry`, `summary-carry--over` in PackingList | YES — extract to shared `<LimitIndicator>` |
+| Ghost buttons | `.btn-ghost` in App.css | YES — view-switcher nav |
+| Design tokens | `--success`, `--warning`, `--error` in index.css | YES — limit indicator colors |
+
+---
+
+## v1.3+ — Code Quality
+
+### Extract useFileAttach Hook
+**What:** Extract the duplicated file attachment logic (base64 encode + POST /api/extract-file) from `LandingPage.jsx:47-74` and `PackingList.jsx:173-200` into a shared `useFileAttach()` hook.
+**Why:** Identical ~25-line blocks in both components. Bugs fixed in one place get missed in the other.
+**Pros:** Single source of truth for file handling.
+**Cons:** One more abstraction for 2 callsites.
+**Depends on:** Any PR that touches either component.
+
+### Consolidate generatePlan Callers
+**What:** Extract a shared `generatePlan(params)` helper from `handleGenerate()` (App.jsx:334) and `handleConfirmChange()` (App.jsx:403). Both POST to `/api/generate` with slightly different state management.
+**Why:** Adding a 3rd callsite would require a 3rd copy.
+**Pros:** Cleaner App.jsx, single error handling path.
+**Cons:** Minor refactor, works fine today.
+**Depends on:** Stable App.jsx state shape.
+
+---
+
 ## GSTACK REVIEW REPORT
 
 | Review | Trigger | Why | Runs | Status | Findings |
 |--------|---------|-----|------|--------|----------|
 | CEO Review | `/plan-ceo-review` | Scope & strategy | 1 | CLEAR (PLAN via /autoplan) | 3 scope additions accepted (rate limit, navigator.share, AbortController), 1 critical gap flagged (parse/chip mismatch) |
-| Codex Review | `/codex review` | Independent 2nd opinion | 0 | — | — |
-| Eng Review | `/plan-eng-review` | Architecture & tests (required) | 1 | ISSUES (PLAN via /autoplan) | 7 issues, 2 critical gaps (LLM timeout no feedback, unbounded input) |
-| Design Review | `/plan-design-review` | UI/UX gaps | 1 | CLEAR (PLAN via /autoplan) | score: 9/10 → 9/10, 4 design decisions added |
+| Codex Review | `/codex review` | Independent 2nd opinion | 1 | ISSUES | 8 findings (4 accepted: Export not a tab, chat in Packing List, mobile weather spec, shared LimitIndicator) |
+| Eng Review | `/plan-eng-review` | Architecture & tests (required) | 2 | CLEAR (PLAN 2026-04-03) | v1.1: 7 issues, 2 critical gaps. v1.2: 8 architecture decisions, 0 unresolved |
+| Design Review | `/plan-design-review` | UI/UX gaps | 3 | CLEAR (PLAN) | score: 7/10 → 9/10, 7 design decisions added (2026-04-02: 4-view redesign spec) |
 
-**UNRESOLVED:** 2 critical gaps must be addressed before implementation (server-side AbortController, input length limit on /api/parse)
-**VERDICT:** CEO + DESIGN CLEARED — eng review required before implementation
+**UNRESOLVED:** 0 — all decisions made. v1.1 critical gaps (AbortController, input length limit) remain open but are v1.1 scope.
+**VERDICT:** CEO + DESIGN + ENG CLEARED — ready to implement v1.2
 
 ---
 
-### Eng Review — Completion Summary
+### v1.2 Eng Review — Completion Summary
 
 ```
 +====================================================================+
-|         ENG PLAN REVIEW — COMPLETION SUMMARY                       |
+|         ENG PLAN REVIEW v1.2 — COMPLETION SUMMARY                  |
 +====================================================================+
-| Scope Challenge       | Scope accepted as-is. Export already        |
-|                       | shipped (copyList() exists). Only gaps fix. |
-| Architecture Review   | 7 issues found (2 HIGH security, 5 MEDIUM) |
-| Code Quality Review   | 7 issues found                              |
-| Test Review           | 0% coverage. 20 paths, 0 tested. CRITICAL   |
-| Performance Review    | 2 issues found (timeout, rate limit)        |
-| NOT in scope          | written (6 items)                           |
-| What already exists   | written (7 items — all reusable)            |
-| Failure modes         | 9 modes, 2 CRITICAL gaps flagged            |
-| Outside voice         | Claude subagent ran (Codex unavailable)     |
-| Lake Score            | 10/10 recommendations chose complete option |
+| Scope Challenge       | One PR. All v1.2 changes. User decided.     |
+| Architecture Review   | 2 issues raised, 2 resolved.                 |
+|                       | (Weather backend, mobile layout approach)    |
+| Code Quality Review   | 5 notes, all obvious fixes (no questions)   |
+| Test Review           | 0% baseline. 21 new paths identified.        |
+|                       | 4 need E2E. Test plan written.              |
+| Performance Review    | 0 issues. Minor payload increase accepted.  |
+| NOT in scope          | 10 items listed                             |
+| What already exists   | 8 items — all reusable                      |
+| Failure modes         | 4 modes, 0 CRITICAL gaps                   |
+| Outside voice         | Claude subagent (Codex unavailable)         |
+|                       | 8 findings, 4 accepted, 4 dismissed         |
+| TODOS.md updates      | 2 TODOs added (file hook, generatePlan)     |
+| Parallelization       | Sequential — tight state coupling in App.jsx|
+| Lake Score            | 9/10 recommendations chose complete option  |
 +====================================================================+
 ```
 

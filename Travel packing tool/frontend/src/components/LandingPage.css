@@ -62,27 +62,40 @@
 
 /* ── HERO ──────────────────────────────────────────────────────────────── */
 .hero {
-  max-width: 760px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 640px;
   margin: 0 auto;
-  padding: 80px 40px 60px;
+  padding: 100px 32px 40px;
   text-align: center;
 }
 
-.hero-headline {
-  font-family: var(--font-serif);
-  font-size: clamp(42px, 6vw, 64px);
-  line-height: 1.08;
-  color: var(--text);
-  letter-spacing: -0.5px;
-  margin-bottom: 44px;
+/* Brand title */
+.hero-title-group {
+  margin-bottom: 28px;
 }
-.hero-headline em {
+.hero-brand-title {
+  font-family: var(--font-serif);
+  font-size: clamp(52px, 9vw, 80px);
+  line-height: 1;
+  letter-spacing: -1px;
+  margin: 0 0 10px;
+}
+.hb-pack { color: var(--text); }
+.hb-wise { color: var(--accent); }
+
+.hero-subtitle {
+  font-family: var(--font-serif);
+  font-size: clamp(18px, 2.5vw, 24px);
+  color: var(--muted);
   font-style: italic;
-  color: var(--accent);
+  margin: 0;
 }
 
 /* Input card */
 .hero-input-card {
+  width: 100%;
   background: var(--surface);
   border: 1.5px solid var(--border);
   border-radius: 14px;
@@ -141,6 +154,39 @@
 }
 .upload-btn:hover { border-color: var(--faint); color: var(--text); }
 .upload-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.upload-btn--loading { opacity: 0.7; cursor: default; }
+
+/* Attached file indicator */
+.hero-attachment {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--accent-lt);
+}
+.attach-icon { color: var(--accent); flex-shrink: 0; }
+.attach-name {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--accent);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.attach-remove {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--muted);
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  border-radius: 3px;
+  transition: color 0.12s;
+}
+.attach-remove:hover { color: var(--text); }
 
 .hero-char-hint {
   font-size: 11px;
@@ -291,7 +337,7 @@
 .templates-section {
   max-width: 760px;
   margin: 0 auto;
-  padding: 0 40px 80px;
+  padding: 0 40px 48px;
 }
 
 .section-divider {
@@ -361,7 +407,7 @@
   background: var(--surface);
   border-top: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
-  padding: 48px 40px;
+  padding: 32px 40px;
 }
 .how-inner {
   max-width: 760px;

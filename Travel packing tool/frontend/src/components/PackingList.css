@@ -7,75 +7,46 @@
   background: var(--surface);
 }
 
-/* ─── Trip summary card ─────────────────────────────────────────────────── */
-.trip-summary-wrap {
-  padding: 8px 10px 6px;
-  flex-shrink: 0;
+/* ─── Trip summary strip (compact single-line) ──────────────────────────── */
+.summary-strip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 16px;
+  border-bottom: 1px solid var(--border);
   background: var(--surface);
-  box-shadow: 0 2px 8px rgba(44, 36, 22, 0.06);
+  flex-shrink: 0;
+  flex-wrap: wrap;
 }
-.trip-summary {
-  background: var(--accent-lt);
-  border: 1.5px solid rgba(74, 103, 65, 0.28);
-  border-radius: 7px;
-  padding: 9px 12px 8px;
-  box-shadow: 0 1px 4px rgba(74, 103, 65, 0.06);
+.summary-strip-icon {
+  color: var(--faint);
+  flex-shrink: 0;
 }
-.summary-heading {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  color: var(--accent);
-  margin-bottom: 8px;
-}
-.summary-heading svg { color: var(--accent); }
-
-/* 2×2 stats grid */
-.summary-stats {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1px 12px;
-  margin-bottom: 8px;
-}
-.summary-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  padding: 2px 0;
-  font-size: 11.5px;
-}
-.s-label { color: var(--muted); }
-.s-val {
-  font-variant-numeric: tabular-nums;
-  font-weight: 500;
-  color: var(--text);
-}
-
-/* Carry-on status bar */
-.summary-carry {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  padding-top: 7px;
-  border-top: 1px solid rgba(74, 103, 65, 0.18);
+.summary-stat {
   font-size: 11px;
-  font-weight: 600;
-  color: var(--accent);
-}
-.summary-carry svg { color: var(--accent); }
-.summary-carry--over { color: #b45309; }
-.summary-carry--over svg { color: #b45309; }
-
-.carry-count {
-  margin-left: auto;
-  font-variant-numeric: tabular-nums;
-  font-weight: 500;
-  font-size: 10.5px;
   color: var(--muted);
+  white-space: nowrap;
+}
+.ss-val {
+  font-weight: 600;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.summary-sep {
+  color: var(--faint);
+  font-size: 11px;
+}
+.summary-bag-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--accent);
+  white-space: nowrap;
+}
+.summary-bag-status--over {
+  color: #b45309;
 }
 
 /* ─── Packing list (scrollable) ─────────────────────────────────────────── */
@@ -177,6 +148,74 @@
 .packing-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 .packing-scroll::-webkit-scrollbar-thumb:hover { background: var(--faint); }
 
+/* ─── Multi-column packing list ─────────────────────────────────────────── */
+.packing-scroll--multi {
+  padding-bottom: 80px; /* extra space for floating FAB */
+}
+/* Category groups don't split across columns */
+.packing-scroll--multi > div {
+  break-inside: avoid;
+}
+/* Packing header spans full width (sticky, before columns) */
+.packing-scroll--multi .packing-header {
+  column-span: all;
+}
+
+@media (min-width: 900px) {
+  .packing-scroll--multi {
+    columns: 2 260px;
+    column-gap: 0;
+  }
+}
+@media (min-width: 1300px) {
+  .packing-scroll--multi {
+    columns: 3 260px;
+  }
+}
+
+/* ─── Floating chat bubble ───────────────────────────────────────────────── */
+.floating-chat-wrap {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.floating-chat-panel {
+  width: 320px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(44,36,22,0.18);
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.floating-chat-panel .chat-panel-wrap {
+  border-top: none;
+}
+
+.chat-fab {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #3A5432;
+  border: none;
+  box-shadow: 0 4px 16px rgba(44,36,22,0.24);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.15s, opacity 0.15s;
+  flex-shrink: 0;
+}
+.chat-fab:hover { opacity: 0.9; transform: scale(1.06); }
+.chat-fab--open { background: #2e4229; }
+
 /* ─── Chat card ──────────────────────────────────────────────────────────── */
 .panel-chat-wrap {
   padding: 8px 12px 14px;
@@ -257,12 +296,68 @@
 .chat-chip:hover:not(:disabled) { background: rgba(255,255,255,0.22); }
 .chat-chip:disabled { opacity: 0.4; cursor: not-allowed; }
 
-/* Input row */
+/* Attached file indicator */
+.chat-attachment {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0 13px 8px;
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 6px;
+  padding: 5px 8px;
+}
+.chat-attach-icon { color: rgba(255,255,255,0.7); flex-shrink: 0; }
+.chat-attach-name {
+  font-size: 11px;
+  color: rgba(255,255,255,0.85);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.chat-attach-remove {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: rgba(255,255,255,0.5);
+  padding: 1px;
+  display: flex;
+  align-items: center;
+  border-radius: 3px;
+  transition: color 0.12s;
+}
+.chat-attach-remove:hover { color: rgba(255,255,255,0.9); }
+
+/* Attach button in input row */
+.chat-attach-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  background: rgba(255,255,255,0.12);
+  border: 1.5px solid rgba(255,255,255,0.22);
+  border-radius: 50%;
+  cursor: pointer;
+  color: rgba(255,255,255,0.7);
+  transition: background 0.12s, color 0.12s;
+}
+.chat-attach-btn:hover:not(:disabled) {
+  background: rgba(255,255,255,0.22);
+  color: #fff;
+}
+.chat-attach-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.chat-attach-btn--loading { opacity: 0.7; }
+
+/* Input row — pushed to bottom in sidebar mode */
 .chat-input-row {
   display: flex;
   align-items: center;
   gap: 7px;
   padding: 6px 10px 12px;
+  margin-top: auto;
 }
 .chat-input {
   flex: 1;

@@ -1,5 +1,6 @@
 import { useState, Fragment } from 'react'
-import { Plane, Sun, Moon, Dumbbell, RefreshCw, Cloud } from 'lucide-react'
+import { Plane, Sun, Moon, Dumbbell, RefreshCw, Cloud, BarChart2 } from 'lucide-react'
+import DayCard from './DayCard'
 import { API_URL } from '../api.js'
 import './OutfitTimeline.css'
 
@@ -14,20 +15,45 @@ function getRow(type, time) {
   const t = (type || '').toLowerCase()
   const tm = (time || '').toLowerCase()
   if (t === 'transit' || t === 'travel') return 'TRAVEL'
-  if (t === 'activewear') return 'WORKOUT'
+  if (t === 'activewear' || t.includes('workout') || t.includes('athletic') || t.includes('active') || t.includes('sport') || t.includes('gym') || tm === 'workout') return 'WORKOUT'
   if (tm === 'evening' || tm === 'night') return 'EVENING'
   return 'MORNING'
 }
 
 const PILL_CLASS = {
   'Formal':              'pill-formal',
-  'Business Casual':     'pill-business',
+  'Conservative Formal': 'pill-formal',
+  'Semi-Formal':         'pill-formal',
+  'Cocktail':            'pill-formal',
+  'Black Tie':           'pill-formal',
   'Business':            'pill-business',
+  'Business Casual':     'pill-business',
+  'Smart Casual':        'pill-smart',
+  'Resort Casual':       'pill-smart',
+  'Smart':               'pill-smart',
   'Casual':              'pill-casual',
+  'Beach Casual':        'pill-casual',
+  'Daytime':             'pill-casual',
   'Transit':             'pill-transit',
   'Travel':              'pill-transit',
   'Activewear':          'pill-active',
-  'Conservative Formal': 'pill-formal',
+  'Athletic':            'pill-active',
+  'Workout':             'pill-active',
+}
+
+function getPillClass(type) {
+  if (!type) return 'pill-transit'
+  // Exact match first
+  if (PILL_CLASS[type]) return PILL_CLASS[type]
+  // Fuzzy match on keywords
+  const t = type.toLowerCase()
+  if (t.includes('formal') || t.includes('cocktail') || t.includes('black tie')) return 'pill-formal'
+  if (t.includes('business') && !t.includes('casual')) return 'pill-business'
+  if (t.includes('smart') || t.includes('resort')) return 'pill-smart'
+  if (t.includes('casual') || t.includes('daytime')) return 'pill-casual'
+  if (t.includes('transit') || t.includes('travel')) return 'pill-transit'
+  if (t.includes('active') || t.includes('workout') || t.includes('athletic')) return 'pill-active'
+  return 'pill-casual'
 }
 
 // Match a day's date to the correct weather entry by destination date range
@@ -45,17 +71,15 @@ function getWeatherForDay(weatherArr, dayDate) {
   )
 }
 
-export default function OutfitTimeline({ days, tripContext, currentPlan, onRegenerate }) {
+export default function OutfitTimeline({ days, tripContext, currentPlan, onRegenerate, includeWorkouts = true }) {
   const [regenSlot, setRegenSlot] = useState(null) // `${date}-${rowKey}`
 
   if (!days?.length) return null
 
-  // Always show all 4 rows
-  const activeRows = ROW_DEFS
-
-  const cornerMonth = days[0]?.date
-    ? new Date(days[0].date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short' }).toUpperCase()
-    : ''
+  // Filter WORKOUT row when workouts are disabled
+  const activeRows = includeWorkouts
+    ? ROW_DEFS
+    : ROW_DEFS.filter(r => r.key !== 'WORKOUT')
 
   const colCount = days.length
 
@@ -66,7 +90,7 @@ export default function OutfitTimeline({ days, tripContext, currentPlan, onRegen
     try {
       const timeLabel = outfit.time || rowKey
       const dayLabel = day.label || day.date || 'that day'
-      const instruction = `Replace the ${timeLabel} outfit on ${dayLabel} with a completely different option. Keep every other day and outfit exactly the same. Keep the packing list consistent with whatever you change.`
+      const instruction = `Replace ONLY the ${timeLabel} outfit on ${dayLabel} with a completely different option. Do not change any other day or outfit slot.`
       const res = await fetch(`${API_URL}/api/regenerate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -77,7 +101,34 @@ export default function OutfitTimeline({ days, tripContext, currentPlan, onRegen
         }),
       })
       const data = await res.json()
-      if (res.ok) onRegenerate(data)
+      if (res.ok) {
+        // Surgically replace only the target outfit — keep all other days/outfits from currentPlan
+        const targetDate = day.date
+        const newDay = data.days?.find(d => d.date === targetDate)
+        const newOutfit = newDay?.outfits?.find(o => getRow(o.type, o.time) === rowKey)
+
+        if (newOutfit) {
+          const updatedPlan = {
+            ...currentPlan,
+            days: currentPlan.days.map(d => {
+              if (d.date !== targetDate) return d
+              return {
+                ...d,
+                outfits: d.outfits.map(o =>
+                  getRow(o.type, o.time) === rowKey ? newOutfit : o
+                ),
+              }
+            }),
+            packingList: data.packingList || currentPlan.packingList,
+            totalItems: data.totalItems ?? currentPlan.totalItems,
+            carryOnFeasible: data.carryOnFeasible ?? currentPlan.carryOnFeasible,
+            carryOnLimit: data.carryOnLimit ?? currentPlan.carryOnLimit,
+          }
+          onRegenerate(updatedPlan)
+        } else {
+          onRegenerate(data)
+        }
+      }
     } catch (err) {
       console.error('Slot regen failed:', err)
     } finally {
@@ -87,15 +138,28 @@ export default function OutfitTimeline({ days, tripContext, currentPlan, onRegen
 
   return (
     <div className="timeline-scroll">
-      <div className="cal-scroll-inner">
+      {/* ── Mobile: vertical day-card stack ─────────────────────────── */}
+      <div className="mobile-day-stack">
+        {days.map((day, i) => (
+          <DayCard
+            key={day.date || i}
+            day={day}
+            dayIndex={i}
+            originalRequest={tripContext}
+            currentPlan={currentPlan}
+            onRegenerate={onRegenerate}
+          />
+        ))}
+      </div>
+
+      {/* ── Desktop: calendar grid ───────────────────────────────────── */}
+      <div className="cal-scroll-inner desktop-cal">
         <div
           className="cal-grid"
-          style={{ gridTemplateColumns: `90px repeat(${colCount}, 220px)` }}
+          style={{ gridTemplateColumns: `80px repeat(${colCount}, 170px)` }}
         >
           {/* ── Corner ──────────────────────────────────────────────── */}
-          <div className="g-corner">
-            {cornerMonth && <span className="corner-month">{cornerMonth}</span>}
-          </div>
+          <div className="g-corner" />
 
           {/* ── Column headers ──────────────────────────────────────── */}
           {days.map((day, i) => {
@@ -113,11 +177,16 @@ export default function OutfitTimeline({ days, tripContext, currentPlan, onRegen
               <div key={day.date || i} className="g-col-head">
                 {dow && <div className="col-dow">{dow}</div>}
                 <div className="col-date">{dateNum}</div>
-                {day.events && <div className="col-events">{day.events}</div>}
-                {weatherEntry?.weather && (
-                  <div className="col-weather">
-                    <Cloud size={11} />
+                {day.events && (
+                  <div className="col-events">{day.events}</div>
+                )}
+                {weatherEntry?.weather && !weatherEntry.weather.toLowerCase().includes('unavailable') && (
+                  <div className={`col-weather${weatherEntry.isAverage ? ' col-weather--avg' : ''}`}>
+                    {weatherEntry.isAverage ? <BarChart2 size={11} /> : <Cloud size={11} />}
                     {weatherEntry.weather}
+                    {weatherEntry.isAverage && (
+                      <span className="weather-avg-tag" title={`${weatherEntry.monthLabel || 'historical'} monthly average`}>avg</span>
+                    )}
                   </div>
                 )}
               </div>
@@ -146,7 +215,7 @@ export default function OutfitTimeline({ days, tripContext, currentPlan, onRegen
                   >
                     {outfit ? (
                       <>
-                        <span className={`pill ${PILL_CLASS[outfit.type] || 'pill-transit'}`}>
+                        <span className={`pill ${getPillClass(outfit.type)}`}>
                           {outfit.type}
                         </span>
                         <ul className="outfit-items">
@@ -176,3 +245,4 @@ export default function OutfitTimeline({ days, tripContext, currentPlan, onRegen
     </div>
   )
 }
+
