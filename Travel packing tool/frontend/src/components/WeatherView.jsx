@@ -1,72 +1,21 @@
-import { BarChart2 } from 'lucide-react'
+import { BarChart2, Sun, Cloud, CloudRain, CloudSnow, CloudLightning, Wind, Droplets } from 'lucide-react'
 import './WeatherView.css'
 
-const CONDITION_EMOJI = {
-  // Clear
-  'clear sky': '☀️',
-  'mainly clear': '🌤️',
-  'partly cloudy': '⛅',
-  'overcast': '☁️',
-  // Fog
-  'foggy': '🌫️',
-  'icy fog': '🌫️',
-  'depositing rime fog': '🌫️',
-  // Drizzle
-  'light drizzle': '🌦️',
-  'drizzle': '🌦️',
-  'moderate drizzle': '🌦️',
-  'dense drizzle': '🌧️',
-  'heavy drizzle': '🌧️',
-  'freezing drizzle': '🌨️',
-  'heavy freezing drizzle': '🌨️',
-  // Rain
-  'light rain': '🌧️',
-  'rain': '🌧️',
-  'moderate rain': '🌧️',
-  'heavy rain': '🌧️',
-  'very heavy rain': '🌧️',
-  'freezing rain': '🌨️',
-  'heavy freezing rain': '🌨️',
-  // Snow
-  'light snow': '🌨️',
-  'snow': '❄️',
-  'moderate snow': '❄️',
-  'heavy snow': '❄️',
-  'heavy snow fall': '❄️',
-  'snow grains': '🌨️',
-  'blizzard': '❄️',
-  // Showers
-  'light rain showers': '🌦️',
-  'rain showers': '🌦️',
-  'showers': '🌦️',
-  'moderate showers': '🌦️',
-  'heavy showers': '🌧️',
-  'violent showers': '🌧️',
-  'snow showers': '🌨️',
-  'light snow showers': '🌨️',
-  'heavy snow showers': '🌨️',
-  // Thunder
-  'thunderstorm': '⛈️',
-  'light thunderstorm': '🌩️',
-  'moderate thunderstorm': '⛈️',
-  'heavy thunderstorm': '⛈️',
-  'thunderstorm w/ hail': '⛈️',
-  'thunderstorm w/ heavy hail': '⛈️',
-  'violent thunderstorm': '⛈️',
-  // Misc
-  'variable conditions': '🌤️',
-  'haze': '🌫️',
-  'dust': '🌫️',
-  'smoke': '🌫️',
-  'tornado': '🌪️',
-  'hot': '🌡️',
-  'cold': '🥶',
-  'windy': '💨',
+function WeatherIcon({ condition, size = 22 }) {
+  const s = (condition || '').toLowerCase()
+  const style = { color: 'var(--faint)', flexShrink: 0 }
+  if (/thunder|lightning/i.test(s))            return <CloudLightning size={size} style={style} />
+  if (/snow|blizzard|sleet/i.test(s))          return <CloudSnow      size={size} style={style} />
+  if (/rain|shower|drizzle|freezing/i.test(s)) return <CloudRain      size={size} style={style} />
+  if (/fog|mist|haze/i.test(s))                return <Droplets       size={size} style={style} />
+  if (/wind/i.test(s))                          return <Wind           size={size} style={style} />
+  if (/cloud|overcast/i.test(s))               return <Cloud          size={size} style={style} />
+  if (/clear|sun|mainly/i.test(s))             return <Sun            size={size} style={style} />
+  return <Cloud size={size} style={style} />
 }
 
-function conditionEmoji(cond) {
-  if (!cond) return '🌤️'
-  return CONDITION_EMOJI[cond.toLowerCase()] || '🌤️'
+function isWet(condition) {
+  return /rain|shower|drizzle|thunder|snow|sleet|freezing/i.test(condition || '')
 }
 
 function formatDayLabel(dateStr) {
@@ -92,6 +41,12 @@ function formatDateRange(dates) {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
+const PERIODS = [
+  { label: 'AM',  condKey: 'morningCondition',   tempKey: 'morning' },
+  { label: 'PM',  condKey: 'afternoonCondition',  tempKey: 'afternoon' },
+  { label: 'EVE', condKey: 'eveningCondition',    tempKey: 'evening' },
+]
+
 export default function WeatherView({ weather }) {
   if (!weather?.length) return null
 
@@ -111,43 +66,59 @@ export default function WeatherView({ weather }) {
             )}
           </div>
 
-          {/* Daily forecast cards */}
           {w.dailyData?.length > 0 ? (
             <div className="weather-day-cards">
               {w.dailyData.map((day) => {
                 const { weekday, date } = formatDayLabel(day.date)
-                const emoji = conditionEmoji(day.condition)
+                const hasPeriods = PERIODS.some(p => day[p.condKey] != null)
+
                 return (
                   <div key={day.date} className="weather-day-card">
+                    {/* Date */}
                     <div className="wdc-top">
                       <div className="wdc-dow">{weekday}</div>
                       <div className="wdc-date">{date}</div>
                     </div>
-                    <div className="wdc-icon">{emoji}</div>
+
+                    {/* Icon */}
+                    <div className="wdc-icon">
+                      <WeatherIcon condition={day.condition} size={26} />
+                    </div>
+
+                    {/* Overall condition — fixed height so temps always align */}
                     <div className="wdc-condition">{day.condition}</div>
+
+                    {/* High / Low */}
                     <div className="wdc-temps">
                       <span className="wdc-high">{day.high}°</span>
                       <span className="wdc-low">{day.low}°</span>
                     </div>
+
+                    {/* Precip */}
                     {day.precipProb != null && (
                       <div className={`wdc-precip${day.precipProb >= 40 ? ' wdc-precip--wet' : ''}`}>
-                        💧 {day.precipProb}%
+                        <Droplets size={9} style={{ color: 'inherit' }} />
+                        {day.precipProb}%
                       </div>
                     )}
-                    {day.morning != null && (
-                      <div className="wdc-hourly">
-                        <span className="wdc-hourly-item">
-                          <span className="wdc-hourly-label">AM</span>
-                          <span className="wdc-hourly-val">{day.morning}°</span>
-                        </span>
-                        <span className="wdc-hourly-item">
-                          <span className="wdc-hourly-label">PM</span>
-                          <span className="wdc-hourly-val">{day.afternoon}°</span>
-                        </span>
-                        <span className="wdc-hourly-item">
-                          <span className="wdc-hourly-label">EVE</span>
-                          <span className="wdc-hourly-val">{day.evening}°</span>
-                        </span>
+
+                    {/* AM / PM / EVE breakdown */}
+                    {hasPeriods && (
+                      <div className="wdc-periods">
+                        {PERIODS.map(({ label, condKey, tempKey }) => {
+                          const cond = day[condKey]
+                          const temp = day[tempKey]
+                          if (cond == null && temp == null) return null
+                          const wet = isWet(cond)
+                          return (
+                            <div key={label} className={`wdc-period-row${wet ? ' wdc-period-row--wet' : ''}`}>
+                              <span className="wdc-period-label">{label}</span>
+                              <WeatherIcon condition={cond} size={10} />
+                              {temp != null && <span className="wdc-period-temp">{temp}°</span>}
+                              {cond && <span className="wdc-period-cond">{cond}</span>}
+                            </div>
+                          )
+                        })}
                       </div>
                     )}
                   </div>

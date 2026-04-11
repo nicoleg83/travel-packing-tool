@@ -1,10 +1,10 @@
+/* ─── Outer scroll ───────────────────────────────────────────────── */
 .weather-view {
   flex: 1;
   overflow-y: auto;
   padding: 28px 32px;
   display: flex;
   flex-direction: column;
-  gap: 0;
 }
 
 /* ─── Per-destination section ───────────────────────────────────── */
@@ -13,7 +13,7 @@
   border-bottom: 1px solid var(--border);
 }
 .weather-dest:first-child { padding-top: 0; }
-.weather-dest:last-child { border-bottom: none; }
+.weather-dest:last-child  { border-bottom: none; }
 
 .weather-dest-header {
   display: flex;
@@ -22,33 +22,11 @@
   margin-bottom: 16px;
   gap: 12px;
 }
-.weather-dest-meta {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-.weather-dest-city {
-  font-family: var(--font-serif);
-  font-size: 24px;
-  color: var(--text);
-  line-height: 1;
-}
-.weather-dest-dates {
-  font-size: 12px;
-  color: var(--muted);
-}
-
-.weather-dest-summary {
-  font-size: 14px;
-  color: var(--muted);
-  margin: 0 0 6px;
-}
-.weather-regen-hint {
-  font-size: 11px;
-  color: var(--faint);
-  font-style: italic;
-  margin: 0;
-}
+.weather-dest-meta    { display: flex; flex-direction: column; gap: 3px; }
+.weather-dest-city    { font-family: var(--font-serif); font-size: 24px; color: var(--text); line-height: 1; }
+.weather-dest-dates   { font-size: 12px; color: var(--muted); }
+.weather-dest-summary { font-size: 14px; color: var(--muted); margin: 0 0 6px; }
+.weather-regen-hint   { font-size: 11px; color: var(--faint); font-style: italic; margin: 0; }
 
 /* ─── Avg badge ─────────────────────────────────────────────────── */
 .weather-avg-tag {
@@ -68,11 +46,12 @@
   margin-top: 6px;
 }
 
-/* ─── Day cards grid ────────────────────────────────────────────── */
+/* ─── Day cards — fixed-width columns, rows stretch to equal height ─ */
 .weather-day-cards {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 148px);
   gap: 8px;
-  flex-wrap: wrap;
+  align-items: stretch;   /* all cards in a row share the same height */
 }
 
 .weather-day-card {
@@ -80,8 +59,6 @@
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 14px 12px 12px;
-  min-width: 100px;
-  flex: 0 0 auto;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -93,96 +70,96 @@
   box-shadow: 0 2px 12px rgba(44,36,22,0.08);
 }
 
-.wdc-top {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1px;
-  width: 100%;
-}
-.wdc-dow {
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 1.5px;
-  color: var(--accent);
-}
-.wdc-date {
-  font-size: 10px;
-  color: var(--muted);
-  white-space: nowrap;
-}
+/* ─── Date header ────────────────────────────────────────────────── */
+.wdc-top  { display: flex; flex-direction: column; align-items: center; gap: 1px; width: 100%; }
+.wdc-dow  { font-size: 9px; font-weight: 700; letter-spacing: 1.5px; color: var(--accent); }
+.wdc-date { font-size: 10px; color: var(--muted); white-space: nowrap; }
 
-.wdc-icon {
-  font-size: 28px;
-  line-height: 1;
-  margin: 4px 0 2px;
-}
+/* ─── Icon ───────────────────────────────────────────────────────── */
+.wdc-icon { margin: 6px 0 2px; display: flex; align-items: center; justify-content: center; }
 
+/* ─── Condition — fixed 2-line reserve so temps always sit at same level */
 .wdc-condition {
   font-size: 10px;
   color: var(--muted);
   text-align: center;
-  line-height: 1.3;
-  max-width: 90px;
-}
-
-.wdc-temps {
+  line-height: 1.35;
+  min-height: 2.7em;
   display: flex;
-  align-items: baseline;
-  gap: 6px;
-  margin-top: 2px;
-}
-.wdc-high {
-  font-family: var(--font-serif);
-  font-size: 20px;
-  color: var(--text);
-  font-weight: 600;
-  line-height: 1;
-}
-.wdc-low {
-  font-size: 14px;
-  color: var(--faint);
+  align-items: center;
+  justify-content: center;
+  width: 100%;
 }
 
+/* ─── High / Low ─────────────────────────────────────────────────── */
+.wdc-temps    { display: flex; align-items: baseline; gap: 6px; margin-top: 2px; }
+.wdc-high     { font-family: var(--font-serif); font-size: 20px; color: var(--text); line-height: 1; }
+.wdc-low      { font-size: 14px; color: var(--faint); }
+
+/* ─── Precip ─────────────────────────────────────────────────────── */
 .wdc-precip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
   font-size: 10px;
   color: var(--faint);
   margin-top: 2px;
 }
-.wdc-precip--wet {
-  color: #1d4ed8;
-}
+.wdc-precip--wet { color: var(--muted); font-weight: 600; }
 
-/* ─── Hourly breakdown ──────────────────────────────────────────── */
-.wdc-hourly {
-  display: flex;
-  gap: 6px;
-  margin-top: 6px;
-  padding-top: 6px;
-  border-top: 1px solid var(--border);
+/* ─── AM / PM / EVE period rows ──────────────────────────────────── */
+.wdc-periods {
   width: 100%;
-  justify-content: space-around;
-}
-.wdc-hourly-item {
+  margin-top: auto;   /* pushes to bottom — cards in same row align periods at same Y */
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 2px;
+  gap: 5px;
 }
-.wdc-hourly-label {
+
+.wdc-period-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  width: 100%;
+}
+
+.wdc-period-label {
   font-size: 8px;
   font-weight: 700;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
   color: var(--faint);
+  width: 24px;
+  flex-shrink: 0;
+  padding-top: 1px;
 }
-.wdc-hourly-val {
-  font-size: 11px;
+
+.wdc-period-temp {
+  font-size: 10px;
   font-weight: 600;
   color: var(--text);
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  flex-shrink: 0;
+  width: 26px;
+  padding-top: 1px;
 }
 
+.wdc-period-cond {
+  font-size: 9.5px;
+  color: var(--muted);
+  line-height: 1.3;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Highlight wet periods */
+.wdc-period-row--wet .wdc-period-label { color: var(--muted); }
+.wdc-period-row--wet .wdc-period-cond  { color: var(--text); font-weight: 600; }
+
 /* ─── Scrollbar ─────────────────────────────────────────────────── */
-.weather-view::-webkit-scrollbar { width: 4px; }
+.weather-view::-webkit-scrollbar       { width: 4px; }
 .weather-view::-webkit-scrollbar-track { background: transparent; }
 .weather-view::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
