@@ -12,6 +12,14 @@
   min-height: 100%;
 }
 
+/* ─── Column wrapper: pagination above grid ─────────────────────────────── */
+.cal-col-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  flex-shrink: 0;
+}
+
 /* ─── Grid ──────────────────────────────────────────────────────────────── */
 .cal-grid {
   display: grid;
@@ -87,10 +95,6 @@
   color: var(--faint);
   margin-top: 6px;
 }
-.col-weather-emoji {
-  font-size: 11px;
-  line-height: 1;
-}
 .col-weather--avg {
   color: var(--muted);
   font-style: italic;
@@ -147,8 +151,8 @@
   background: var(--surface);
   border-right: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
-  padding: 12px 14px 10px;
-  min-height: 110px;
+  padding: 16px 18px 14px;
+  min-height: 130px;
 }
 .g-outfit.cell-empty {
   background: var(--bg);
@@ -224,25 +228,44 @@
 .cal-pagination {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 12px;
-  align-self: flex-start;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  align-self: stretch;
+  min-width: 0;
 }
-.cal-page-btn {
+.cal-page-prev {
   display: flex;
   align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
+  gap: 4px;
+  padding: 5px 10px;
   border-radius: 6px;
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--muted);
+  font-size: 11px;
+  font-weight: 500;
   cursor: pointer;
   transition: border-color 0.12s, color 0.12s;
 }
-.cal-page-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
-.cal-page-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.cal-page-prev:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.cal-page-prev:disabled { opacity: 0.3; cursor: not-allowed; }
+.cal-page-next {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: 0.2px;
+  transition: opacity 0.12s;
+}
+.cal-page-next:hover:not(:disabled) { opacity: 0.85; }
+.cal-page-next:disabled { opacity: 0.3; cursor: not-allowed; }
 .cal-page-label {
   font-size: 11px;
   color: var(--muted);

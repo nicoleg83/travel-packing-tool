@@ -1,30 +1,17 @@
 import { useState, Fragment } from 'react'
-import { Plane, Sun, Moon, Dumbbell, RefreshCw, BarChart2, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Plane, Sun, Moon, Dumbbell, RefreshCw, BarChart2, ChevronLeft, ChevronRight, Cloud, CloudRain, CloudSnow, CloudLightning, Wind, Droplets } from 'lucide-react'
 
-const WEATHER_EMOJI = {
-  'clear sky': '☀️', 'mainly clear': '🌤️', 'partly cloudy': '⛅', 'overcast': '☁️',
-  'foggy': '🌫️', 'icy fog': '🌫️', 'haze': '🌫️',
-  'light drizzle': '🌦️', 'drizzle': '🌦️', 'heavy drizzle': '🌧️',
-  'light rain': '🌧️', 'rain': '🌧️', 'moderate rain': '🌧️', 'heavy rain': '🌧️',
-  'freezing rain': '🌨️', 'freezing drizzle': '🌨️',
-  'light snow': '🌨️', 'snow': '❄️', 'heavy snow': '❄️', 'snow grains': '🌨️',
-  'light rain showers': '🌦️', 'rain showers': '🌦️', 'showers': '🌦️', 'heavy showers': '🌧️',
-  'snow showers': '🌨️', 'heavy snow showers': '🌨️',
-  'light thunderstorm': '🌩️', 'thunderstorm': '⛈️', 'thunderstorm w/ hail': '⛈️', 'heavy thunderstorm': '⛈️',
-  'variable conditions': '🌤️', 'windy': '💨',
-}
-function calWeatherEmoji(weatherStr) {
-  if (!weatherStr) return null
-  const lower = weatherStr.toLowerCase()
-  for (const [key, emoji] of Object.entries(WEATHER_EMOJI)) {
-    if (lower.includes(key)) return emoji
-  }
-  if (/rain|shower/i.test(weatherStr)) return '🌧️'
-  if (/snow/i.test(weatherStr)) return '❄️'
-  if (/thunder/i.test(weatherStr)) return '⛈️'
-  if (/cloud/i.test(weatherStr)) return '☁️'
-  if (/clear|sun/i.test(weatherStr)) return '☀️'
-  return '🌤️'
+function WeatherIcon({ condition }) {
+  const s = (condition || '').toLowerCase()
+  const style = { color: 'var(--faint)', flexShrink: 0 }
+  if (/thunder|lightning/i.test(s)) return <CloudLightning size={11} style={style} />
+  if (/snow|blizzard|ice/i.test(s)) return <CloudSnow size={11} style={style} />
+  if (/rain|shower|drizzle/i.test(s)) return <CloudRain size={11} style={style} />
+  if (/fog|haze|mist/i.test(s)) return <Droplets size={11} style={style} />
+  if (/wind/i.test(s)) return <Wind size={11} style={style} />
+  if (/cloud|overcast/i.test(s)) return <Cloud size={11} style={style} />
+  if (/clear|sun|mainly/i.test(s)) return <Sun size={11} style={style} />
+  return <Cloud size={11} style={style} />
 }
 import DayCard from './DayCard'
 import { API_URL } from '../api.js'
@@ -97,7 +84,7 @@ function getWeatherForDay(weatherArr, dayDate) {
   )
 }
 
-const PAGE_SIZE = 5
+const PAGE_SIZE = 7
 
 export default function OutfitTimeline({ days, tripContext, currentPlan, onRegenerate, includeWorkouts = true }) {
   const [regenSlot, setRegenSlot] = useState(null) // `${date}-${rowKey}`
@@ -188,27 +175,28 @@ export default function OutfitTimeline({ days, tripContext, currentPlan, onRegen
 
       {/* ── Desktop: calendar grid ───────────────────────────────────── */}
       <div className="cal-scroll-inner desktop-cal">
-        {/* Pagination controls */}
+        <div className="cal-col-wrap">
+        {/* Pagination controls — above the grid, full width */}
         {totalPages > 1 && (
           <div className="cal-pagination">
             <button
-              className="cal-page-btn"
+              className="cal-page-prev"
               onClick={() => setPage(p => Math.max(0, p - 1))}
               disabled={page === 0}
               aria-label="Previous days"
             >
-              <ChevronLeft size={14} />
+              <ChevronLeft size={12} /> Prev
             </button>
             <span className="cal-page-label">
               Days {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, days.length)} of {days.length}
             </span>
             <button
-              className="cal-page-btn"
+              className="cal-page-next"
               onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
               disabled={page === totalPages - 1}
               aria-label="Next days"
             >
-              <ChevronRight size={14} />
+              Next <ChevronRight size={13} />
             </button>
           </div>
         )}
@@ -243,7 +231,7 @@ export default function OutfitTimeline({ days, tripContext, currentPlan, onRegen
                   <div className={`col-weather${weatherEntry.isAverage ? ' col-weather--avg' : ''}`}>
                     {weatherEntry.isAverage
                       ? <BarChart2 size={11} />
-                      : <span className="col-weather-emoji">{calWeatherEmoji(weatherEntry.weather)}</span>
+                      : <WeatherIcon condition={weatherEntry.weather} />
                     }
                     {weatherEntry.weather}
                     {weatherEntry.isAverage && (
@@ -302,6 +290,7 @@ export default function OutfitTimeline({ days, tripContext, currentPlan, onRegen
               })}
             </Fragment>
           ))}
+        </div>
         </div>
       </div>
     </div>
