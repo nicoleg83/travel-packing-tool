@@ -39,26 +39,26 @@ cd .claude/skills/gstack && ./setup
 
 ## Deploy Configuration (configured by /setup-deploy)
 - Platform: Render (backend) + Vercel (frontend)
-- Backend URL: https://packwise-backend.onrender.com (confirm after first deploy)
-- Frontend URL: https://packwise.vercel.app (confirm after first deploy)
+- Backend URL: https://travel-packing-tool.onrender.com
+- Frontend URL: https://travel-packing-tool-ivory.vercel.app
 - Deploy workflow: auto-deploy on push to main
-- Backend health check: https://packwise-backend.onrender.com/
+- Backend health check: https://travel-packing-tool.onrender.com/
 - Project type: full-stack web app (Express API + React/Vite frontend)
 
 ### Required environment variables
 **Render (backend):**
 - `ANTHROPIC_API_KEY` — your Anthropic API key
-- `ALLOWED_ORIGIN` — your Vercel frontend URL (e.g. https://packwise.vercel.app)
+- `ALLOWED_ORIGIN` — https://travel-packing-tool-ivory.vercel.app
 - `NODE_ENV` — set to `production`
 
 **Vercel (frontend):**
-- `VITE_API_URL` — your Render backend URL (e.g. https://packwise-backend.onrender.com)
+- `VITE_API_URL` — https://travel-packing-tool.onrender.com
 
 ### Custom deploy hooks
 - Pre-merge: none
 - Deploy trigger: automatic on push to main (both platforms)
 - Deploy status: poll health check URL
-- Health check: https://packwise-backend.onrender.com/
+- Health check: https://travel-packing-tool.onrender.com/
 
 ## Design System
 Always read DESIGN.md before making any visual or UI decisions.
