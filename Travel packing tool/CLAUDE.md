@@ -37,6 +37,29 @@ If gstack skills aren't working, run the following to build the binary and regis
 cd .claude/skills/gstack && ./setup
 ```
 
+## Deploy Configuration (configured by /setup-deploy)
+- Platform: Render (backend) + Vercel (frontend)
+- Backend URL: https://packwise-backend.onrender.com (confirm after first deploy)
+- Frontend URL: https://packwise.vercel.app (confirm after first deploy)
+- Deploy workflow: auto-deploy on push to main
+- Backend health check: https://packwise-backend.onrender.com/
+- Project type: full-stack web app (Express API + React/Vite frontend)
+
+### Required environment variables
+**Render (backend):**
+- `ANTHROPIC_API_KEY` — your Anthropic API key
+- `ALLOWED_ORIGIN` — your Vercel frontend URL (e.g. https://packwise.vercel.app)
+- `NODE_ENV` — set to `production`
+
+**Vercel (frontend):**
+- `VITE_API_URL` — your Render backend URL (e.g. https://packwise-backend.onrender.com)
+
+### Custom deploy hooks
+- Pre-merge: none
+- Deploy trigger: automatic on push to main (both platforms)
+- Deploy status: poll health check URL
+- Health check: https://packwise-backend.onrender.com/
+
 ## Design System
 Always read DESIGN.md before making any visual or UI decisions.
 All font choices, colors, spacing, and aesthetic direction are defined there.

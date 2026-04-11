@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: packwise-backend
+    runtime: node
+    rootDir: Travel packing tool/backend
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: ALLOWED_ORIGIN
+        sync: false
+      - key: NODE_ENV
+        value: production
