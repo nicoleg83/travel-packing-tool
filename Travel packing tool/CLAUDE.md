@@ -40,7 +40,7 @@ cd .claude/skills/gstack && ./setup
 ## Deploy Configuration (configured by /setup-deploy)
 - Platform: Render (backend) + Vercel (frontend)
 - Backend URL: https://travel-packing-tool.onrender.com
-- Frontend URL: https://travel-packing-tool-ivory.vercel.app
+- Frontend URL: https://packwiseai.vercel.app
 - Deploy workflow: auto-deploy on push to main
 - Backend health check: https://travel-packing-tool.onrender.com/
 - Project type: full-stack web app (Express API + React/Vite frontend)
@@ -48,7 +48,7 @@ cd .claude/skills/gstack && ./setup
 ### Required environment variables
 **Render (backend):**
 - `ANTHROPIC_API_KEY` — your Anthropic API key
-- `ALLOWED_ORIGIN` — https://travel-packing-tool-ivory.vercel.app
+- `ALLOWED_ORIGIN` — https://packwiseai.vercel.app
 - `NODE_ENV` — set to `production`
 
 **Vercel (frontend):**
