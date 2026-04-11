@@ -7,7 +7,7 @@
   background: var(--surface);
 }
 
-/* ─── Trip summary strip (compact single-line) ──────────────────────────── */
+/* ─── Trip summary strip (kept for non-packing views) ───────────────────── */
 .summary-strip {
   display: flex;
   align-items: center;
@@ -18,6 +18,7 @@
   flex-shrink: 0;
   flex-wrap: wrap;
 }
+
 .summary-strip-icon {
   color: var(--faint);
   flex-shrink: 0;
@@ -57,72 +58,160 @@
   padding-bottom: 12px;
 }
 
+/* ─── Shared column label (used in both packing header and outfit plan) ───── */
+.packing-col-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+  color: var(--accent);
+  white-space: nowrap;
+}
+.packing-col-label svg { flex-shrink: 0; }
+
 .packing-header {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 8px;
-  padding: 18px 16px 14px;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 16px;
+  height: 44px;
   border-bottom: 1px solid var(--border);
+  border-top: 2px solid var(--accent);
   position: sticky;
   top: 0;
   background: var(--surface);
   z-index: 1;
+  flex-shrink: 0;
 }
-.packing-title-row {
+.packing-header-meta {
   display: flex;
   align-items: center;
-  gap: 7px;
-  color: var(--faint);
-}
-.packing-title {
-  font-family: var(--font-serif);
-  font-size: 24px;
-  color: var(--text);
-  letter-spacing: -0.2px;
-}
-.packing-header-right {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  justify-content: center;
+  gap: 5px;
+  flex-wrap: nowrap;
+  overflow: hidden;
 }
 .packed-count {
   font-size: 10px;
   color: var(--accent);
   font-weight: 600;
 }
-.copy-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-family: var(--font-sans);
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--muted);
-  background: transparent;
-  border: 1px solid var(--border);
-  border-radius: 5px;
-  padding: 3px 8px;
-  cursor: pointer;
-  transition: border-color 0.12s, color 0.12s;
+
+/* ─── Outfit day rows (used in SplitView left col and fallback) ──────────── */
+.outfit-day-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border);
 }
-.copy-btn:hover { border-color: var(--faint); color: var(--text); }
-.copy-btn--disabled { opacity: 0.5; cursor: not-allowed; }
+.outfit-day-row:last-child { border-bottom: none; }
+.outfit-day-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 0.5px;
+  min-width: 46px;
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+.outfit-day-outfits {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex: 1;
+  min-width: 0;
+}
+.outfit-day-entry {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+.outfit-day-items {
+  font-size: 10.5px;
+  color: var(--muted);
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+/* When shown inside packing list (fallback, not split layout) */
+.outfit-summary-section {
+  margin: 0 12px 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.outfit-summary-title {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  color: var(--faint);
+  padding: 9px 14px 7px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+
+/* ─── Outfit pills (packing list) ───────────────────────────────────────── */
+.opl-pill {
+  display: inline-block;
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  border-radius: 8px;
+  padding: 2px 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.opl-pill-formal   { background: #DBEAFE; color: #1E3A8A; }
+.opl-pill-business { background: #FEF3C7; color: #92400E; }
+.opl-pill-smart    { background: #D1FAE5; color: #065F46; }
+.opl-pill-casual   { background: #EDE8F5; color: #5C4D8A; }
+.opl-pill-transit  { background: #EDEBE7; color: #7A7062; }
+.opl-pill-active   { background: #FCE8D5; color: #7A3E1A; }
+
+/* ─── Travel day items ──────────────────────────────────────────────────── */
+.cat-label--travel {
+  background: rgba(74,103,65,0.05);
+}
+.travel-worn-tag {
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: var(--accent-lt);
+  border: 1px solid rgba(74,103,65,0.25);
+  border-radius: 4px;
+  padding: 1px 5px;
+  margin-left: 4px;
+}
+.pack-item--travel {
+  background: rgba(74,103,65,0.03);
+}
+.pack-item--travel .iname { color: var(--muted); }
 
 /* Category labels */
 .cat-label {
   display: flex;
   align-items: center;
-  gap: 5px;
-  font-size: 9px;
+  gap: 6px;
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: 1.3px;
+  letter-spacing: 0.6px;
   text-transform: uppercase;
-  color: var(--faint);
-  padding: 10px 16px 4px;
+  color: var(--muted);
+  padding: 14px 16px 5px;
 }
-.cat-label svg { color: var(--faint); }
+.cat-label svg { color: var(--muted); }
 
 /* Pack items */
 .pack-item {
