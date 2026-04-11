@@ -179,7 +179,7 @@ async function fetchWeather(destination) {
       const forecastRes = await fetch(
         `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}` +
         `&daily=temperature_2m_max,temperature_2m_min,weathercode,precipitation_probability_max` +
-        `&hourly=temperature_2m&temperature_unit=fahrenheit&timezone=auto&forecast_days=16`
+        `&hourly=temperature_2m,weathercode&temperature_unit=fahrenheit&timezone=auto&forecast_days=16`
       );
       const forecastData = await forecastRes.json();
 
@@ -188,24 +188,25 @@ async function fetchWeather(destination) {
       const tripEnd = returnDate || refDate;
       const dailyTimes = forecastData.daily.time;
       const hourlyTemps = forecastData.hourly?.temperature_2m || [];
+      const hourlyCodes = forecastData.hourly?.weathercode || [];
 
-      console.log(`[weather] ${city}: ${dailyTimes.length} forecast days, ${hourlyTemps.length} hourly pts, filtering ${refDate}–${tripEnd}`);
+      console.log(`[weather] ${city}: ${dailyTimes.length} forecast days available`);
 
-      const relevant = dailyTimes
-        .map((date, i) => ({
-          date,
-          high: forecastData.daily.temperature_2m_max[i],
-          low: forecastData.daily.temperature_2m_min[i],
-          code: forecastData.daily.weathercode[i],
-          precipProb: forecastData.daily.precipitation_probability_max?.[i] ?? null,
-          // Hourly indices: each day is 24 hours, index i*24 is midnight
-          morning:   hourlyTemps[i * 24 + 8]  != null ? Math.round(hourlyTemps[i * 24 + 8])  : null,
-          afternoon: hourlyTemps[i * 24 + 14] != null ? Math.round(hourlyTemps[i * 24 + 14]) : null,
-          evening:   hourlyTemps[i * 24 + 20] != null ? Math.round(hourlyTemps[i * 24 + 20]) : null,
-        }))
-        .filter(d => d.date >= refDate && d.date <= tripEnd);
-
-      console.log(`[weather] ${city}: ${relevant.length} relevant days after filter`);
+      // Show the full available forecast window — don't filter to trip dates only
+      // so users can see what weather is coming regardless of exact plan timing
+      const relevant = dailyTimes.map((date, i) => ({
+        date,
+        high: forecastData.daily.temperature_2m_max[i],
+        low: forecastData.daily.temperature_2m_min[i],
+        code: forecastData.daily.weathercode[i],
+        precipProb: forecastData.daily.precipitation_probability_max?.[i] ?? null,
+        morning:          hourlyTemps[i * 24 + 8]  != null ? Math.round(hourlyTemps[i * 24 + 8])  : null,
+        afternoon:        hourlyTemps[i * 24 + 14] != null ? Math.round(hourlyTemps[i * 24 + 14]) : null,
+        evening:          hourlyTemps[i * 24 + 20] != null ? Math.round(hourlyTemps[i * 24 + 20]) : null,
+        morningCondition:   hourlyCodes[i * 24 + 8]  != null ? wmoToDesc(hourlyCodes[i * 24 + 8])  : null,
+        afternoonCondition: hourlyCodes[i * 24 + 14] != null ? wmoToDesc(hourlyCodes[i * 24 + 14]) : null,
+        eveningCondition:   hourlyCodes[i * 24 + 20] != null ? wmoToDesc(hourlyCodes[i * 24 + 20]) : null,
+      }));
 
       if (!relevant.length) {
         return await getMonthlyAverage(latitude, longitude, city, refDate, returnDate);
@@ -223,6 +224,9 @@ async function fetchWeather(destination) {
         morning: d.morning,
         afternoon: d.afternoon,
         evening: d.evening,
+        morningCondition: d.morningCondition,
+        afternoonCondition: d.afternoonCondition,
+        eveningCondition: d.eveningCondition,
       }));
 
       return { summary: `${low}–${high}°F, ${condition}`, location: city, isAverage: false, dailyData };
@@ -274,12 +278,21 @@ Rules:
 - For multi-destination trips, account for location changes in outfit choices
 - For stops marked [DAY TRIP]: plan outfits only — no extra packing items needed for that stop, the traveler returns to their base
 - For stops marked [OVERNIGHT]: pack minimally (1 outfit change max)
-- TRAVEL DAY RULE (mandatory): For every date listed under "Transit dates", you MUST include a "Travel" outfit slot on that day. Use time: "Travel", type: "Transit". This outfit is worn once in-transit and gets dirty — it must appear as a separate entry in the packing list under a "Travel Day" category, never reused across other days. It should be comfortable and casual (joggers or dark jeans, soft layer, sneakers or slip-ons).
+- TRAVEL DAY RULE: ONLY add a "Travel" outfit slot when the day literally involves boarding a commercial flight or long-distance train (e.g. "Flight to Honolulu", "Train to Paris", "fly to NYC"). That's it. The ONLY triggers are the words "flight", "fly", "flying", "airport", "train to [city]", "Amtrak", or similar explicit long-haul transit. NEVER add a Travel outfit for: Uber/taxi/rideshare, local bus, hotel check-in, day trips, hikes, snorkeling, beach days, activities, excursions, sightseeing, or any local movement within a destination. If you are not 100% certain the person is boarding a plane or intercity train that day, do NOT add a Transit outfit. One Travel outfit per trip is typical — a 10-day Hawaii trip usually has exactly one (the outbound flight). Use time: "Travel", type: "Transit". For FEMALE travelers: comfortable and non-restrictive — leggings, soft joggers, or a flowy midi skirt. NEVER jeans for females. For MALE travelers: dark jeans or chinos are fine. Always casual: soft layer, sneakers or slip-ons.
+- TRAVEL DAY ITEMS DO NOT COUNT toward the carry-on limit — these items are WORN not packed. The carry-on limit applies only to packed items. List travel day items in the packing list under "Travel Day" category but exclude them from your item total.
 - WORKOUT SLOTS: When includeWorkouts is true, add workout slots intelligently — NOT on every day. Skip transit days and day trip days entirely. If the itinerary mentions a specific number of workouts, use exactly that number spread evenly. Otherwise, add workouts on roughly every other eligible day (e.g. for a 7-day trip with 5 eligible days: days 1, 3, 5). Use EXACTLY: { "time": "Workout", "type": "Activewear", "items": ["..."] }. The "type" field MUST be exactly "Activewear". When includeWorkouts is false, include ZERO workout slots.
-- CLOTHING SPECIFICITY: Keep clothing descriptions generic unless the traveler specified particular items or activities. Say "slim trousers" not "charcoal wool slim-fit trousers". Say "casual sneakers" not "white low-top leather sneakers". Only get specific when the itinerary calls for it (e.g. hiking boots for a hike, wetsuit for diving).
+- CLOTHING SPECIFICITY: Two tiers. (1) BASICS — underwear, bras, socks, activewear, swimwear, and simple tops: use plain generic names only. "Sports bra" not "moisture-wicking high-impact sports bra". "Leggings" not "high-waist compression leggings". "Swim shorts" not "quick-dry board shorts". "Tank top" not "ribbed fitted tank". Keep basics to 2 words maximum. (2) FEATURED OUTFITS — main daytime/evening looks: include one style or fabric descriptor to make it interesting (e.g. "linen wide-leg trousers", "flowy midi dress", "relaxed chino shorts", "fitted blazer", "wrap dress"). Never specify colors, brands, or performance features.
 - DAY EVENTS: The "events" field must be very brief — 3–6 words maximum (e.g. "Business meetings", "Beach day", "Flight to NYC", "Hanauma Bay snorkeling"). No full sentences.
+- FOOTWEAR & OUTERWEAR: Always include footwear appropriate for the weather and activities, even if not listed in individual outfit items. If rain is forecast, include a packable rain jacket. If cold or snowy, include a warm outer layer or puffer. If hiking is planned, include appropriate hiking footwear. These go in the packing list even when they span multiple outfits. Every outfit must reference its shoes and jacket/layer — do not leave footwear and outerwear out of outfit items.
+- REWEARABILITY: Activewear (leggings, sports bras, shorts) can be reused 2-3 times with washing between uses — do not pack a fresh set for every workout. Swimwear can be rinsed and reused — 1-2 swimsuits maximum unless the itinerary has daily swimming over many days. Plan quantities to account for washing and drying time. If a 5-day trip has 3 workouts, 1-2 sets of activewear is sufficient.
+- PACKING LIST CONSISTENCY (CRITICAL): The packing list MUST contain every item referenced across all outfit entries. Cross-check before outputting: every item mentioned in any outfit's "items" array must appear in the packing list with an appropriate quantity. Do not list items in outfits that do not appear in the packing list. The packing list is the source of truth for what the traveler will pack.
 - Reuse items across non-travel days to minimize packing — the goal is carry-on only
-- Keep the packing list to CLOTHING AND SHOES ONLY — no toiletries, tech, documents, or bags
+- EXTRAS CATEGORIES: After the clothing/shoes categories, always include these non-clothing categories. These do NOT count toward the item limit.
+  • "Undergarments" — underwear and bras in quantities matching the trip length (e.g. 5 days = 5 pairs underwear, 3-4 bras for women or none for men unless relevant). Keep names generic: "Underwear", "Bra", "Socks".
+  • "Toiletries" — travel-sized essentials only: face wash, moisturizer, SPF, deodorant, toothbrush, toothpaste, razor, shampoo/conditioner (or dry shampoo). Add sunscreen if beach, outdoor, or tropical trip. Qty 1 each unless noted.
+  • "Electronics" — always include: phone charger, headphones/earbuds, power bank. Add universal adapter if international travel. Add laptop/tablet only if explicitly mentioned in itinerary.
+  • "Makeup & Beauty" — ONLY for female travelers. Keep it minimal: foundation/BB cream, mascara, lip color, eyebrow pencil, setting spray. Skip if the itinerary is casual/outdoor/beach-focused.
+  • "Travel Essentials" — passport (if international), travel wallet, TSA lock, reusable water bottle, any trip-specific items (e.g. sunscreen already in toiletries can be skipped here). Skip obvious items the traveler always carries.
 - Return ONLY valid JSON — no prose, no markdown, no extra text
 
 Required JSON schema:
@@ -366,9 +379,11 @@ ${editInstruction ? `Additional constraint: ${editInstruction}` : ''}`;
         throw new Error('Response missing required fields');
       }
 
-      const totalItems = parsed.packingList.reduce((sum, cat) => {
-        return sum + cat.items.reduce((s, item) => s + (item.qty || 1), 0);
-      }, 0);
+      // Travel day and extras categories don't count toward clothing carry-on limit
+      const isExcluded = cat => /travel.?day|transit|toiletri|electron|tech|makeup|beauty|cosmetic|essential|document|undergar|underwear|lingerie/i.test(cat.category)
+      const totalItems = parsed.packingList
+        .filter(cat => !isExcluded(cat))
+        .reduce((sum, cat) => sum + cat.items.reduce((s, item) => s + (item.qty || 1), 0), 0);
 
       return {
         weather: weatherSummary,
