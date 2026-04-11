@@ -3,7 +3,7 @@ import { API_URL } from '../api.js'
 import { ArrowRight, Paperclip, X } from 'lucide-react'
 import './LandingPage.css'
 
-const GENDER_OPTIONS = ['Male', 'Female', 'Non-binary']
+const GENDER_OPTIONS = ['Male', 'Female', 'Other']
 const BAG_OPTIONS = ['Carry-on', 'Checked bag']
 
 const ACCEPTED_FILE_TYPES = '.pdf,.jpg,.jpeg,.png,.gif,.webp'

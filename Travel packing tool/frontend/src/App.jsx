@@ -8,7 +8,7 @@ import { API_URL } from './api.js'
 import './App.css'
 
 const TRIP_TYPE_OPTIONS = ['Business', 'Casual', 'Leisure', 'Beach', 'Adventure', 'Wedding', 'Conference']
-const GENDER_OPTIONS = ['Male', 'Female', 'Non-binary']
+const GENDER_OPTIONS = ['Male', 'Female', 'Other']
 const BAG_OPTIONS = ['Carry-on', 'Checked bag']
 const STORAGE_KEY = 'packwise-plan'
 
