@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { MapPin, Plus, ChevronDown, PenLine, Share2, ArrowLeft, ArrowRight, Printer, Shirt, Package, Cloud } from 'lucide-react'
+import { MapPin, Plus, ChevronDown, PenLine, ArrowLeft, ArrowRight, Printer, Shirt, Package, Cloud } from 'lucide-react'
 import LandingPage from './components/LandingPage'
 import SplitView from './components/SplitView'
 import WeatherView from './components/WeatherView'
@@ -277,7 +277,6 @@ function App() {
   const [regenerating, setRegenerating] = useState(false)
   const [pendingChange, setPendingChange] = useState(null)
   const [confirmLoading, setConfirmLoading] = useState(false)
-  const [shareCopied, setShareCopied] = useState(false)
 
   // Sync includeWorkouts when tripContext changes
   useEffect(() => {
@@ -390,18 +389,6 @@ function App() {
 
   function handleChipEdit(change) {
     setPendingChange(change)
-  }
-
-  function handleShare() {
-    try {
-      const payload = btoa(encodeURIComponent(JSON.stringify({ results, tripContext })))
-      const url = `${window.location.origin}${window.location.pathname}?plan=${payload}`
-      navigator.clipboard.writeText(url)
-      setShareCopied(true)
-      setTimeout(() => setShareCopied(false), 2000)
-    } catch (err) {
-      console.error('Share failed:', err)
-    }
   }
 
   async function handleConfirmChange() {
@@ -529,14 +516,12 @@ function App() {
         </div>
 
         <div className="masthead-actions">
-          <button className="btn-ghost" onClick={handleShare} title="Share plan">
-            <Share2 size={12} />
-            {shareCopied ? 'Copied!' : 'Share'}
-          </button>
-          <button className="btn-ghost" onClick={() => window.print()} title="Print / Export">
-            <Printer size={12} />
-            Export
-          </button>
+          {workingView === 'packing' && (
+            <button className="btn-ghost" onClick={() => window.print()} title="Print / Export">
+              <Printer size={12} />
+              Export
+            </button>
+          )}
           <button className="btn-filled" onClick={handleNewPlan}>
             <Plus size={12} />
             New Plan

@@ -357,6 +357,31 @@
     font-size: 9px;
   }
 
+  /* Outfit cells: ensure content is readable in print */
+  .g-outfit {
+    padding: 8px 10px !important;
+    min-height: 0 !important;
+    break-inside: avoid;
+  }
+  .outfit-items li {
+    font-size: 8px !important;
+    line-height: 1.4 !important;
+  }
+  .pill {
+    font-size: 7px !important;
+    padding: 1px 5px !important;
+    margin-bottom: 4px !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .col-dow { font-size: 7px !important; }
+  .col-date { font-size: 13px !important; }
+  .col-events { font-size: 8px !important; }
+  .col-weather { font-size: 8px !important; }
+  .row-label-text { font-size: 7px !important; }
+  .g-col-head { padding: 6px 8px !important; border-top: 2px solid #4a6741 !important; }
+  .g-row-label { padding: 10px 6px 0 !important; }
+
   /* Packing list: 3-column in print */
   .packing-scroll--multi {
     columns: 3 160px !important;

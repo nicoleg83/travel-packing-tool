@@ -15,8 +15,9 @@
   align-items: center;
   gap: 7px;
   padding: 11px 14px 9px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid rgba(74,103,65,0.18);
   flex-shrink: 0;
+  background: rgba(74,103,65,0.07);
 }
 .chat-panel-icon { color: var(--accent); }
 .chat-panel-title {
@@ -148,9 +149,9 @@
 /* ─── Input area ─────────────────────────────────────────────────── */
 .chat-input-area {
   flex-shrink: 0;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid rgba(74,103,65,0.18);
   padding: 10px 12px;
-  background: var(--surface);
+  background: rgba(74,103,65,0.05);
   display: flex;
   align-items: center;
   gap: 8px;
