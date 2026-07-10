@@ -263,6 +263,68 @@ function countTripDays(destinations) {
   return allDates.size || 1;
 }
 
+// JSON schema enforced via structured outputs (output_config.format) — the API
+// constrains the model to emit exactly this shape, so no prose/markdown can
+// precede the JSON. Structured outputs require additionalProperties: false and
+// a required list on every object.
+const RESPONSE_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['days', 'packingList'],
+  properties: {
+    days: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['date', 'label', 'events', 'temp', 'outfits'],
+        properties: {
+          date: { type: 'string', description: 'YYYY-MM-DD' },
+          label: { type: 'string', description: 'e.g. "Mon, Jan 15"' },
+          events: { type: 'string', description: 'brief event summary, 3-6 words' },
+          temp: { type: 'string', description: 'temperature and condition' },
+          outfits: {
+            type: 'array',
+            items: {
+              type: 'object',
+              additionalProperties: false,
+              required: ['time', 'type', 'items'],
+              properties: {
+                time: { type: 'string', description: 'Morning, Evening, Travel, Workout, ...' },
+                type: { type: 'string', description: 'Formal, Casual, Transit, Activewear, ...' },
+                items: { type: 'array', items: { type: 'string' } },
+              },
+            },
+          },
+        },
+      },
+    },
+    packingList: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['category', 'items'],
+        properties: {
+          category: { type: 'string' },
+          items: {
+            type: 'array',
+            items: {
+              type: 'object',
+              additionalProperties: false,
+              required: ['name', 'qty'],
+              properties: {
+                name: { type: 'string' },
+                qty: { type: 'integer' },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+};
+
 // Call Claude to generate the outfit plan
 async function generateOutfits(tripData, weatherSummary, editInstruction = '') {
   const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -366,14 +428,21 @@ ${editInstruction ? `Additional constraint: ${editInstruction}` : ''}`;
     try {
       const message = await client.messages.create({
         model: 'claude-sonnet-4-6',
-        max_tokens: 4096,
+        max_tokens: 8192,
         system: systemPrompt,
+        output_config: { format: { type: 'json_schema', schema: RESPONSE_SCHEMA } },
         messages: [{ role: 'user', content: userPrompt }],
       });
 
-      const raw = message.content[0].text;
-      const text = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
-      const parsed = JSON.parse(text);
+      if (message.stop_reason === 'max_tokens') {
+        throw new Error('Response was cut off before completing — try a shorter itinerary');
+      }
+
+      const textBlock = message.content.find(b => b.type === 'text');
+      if (!textBlock) {
+        throw new Error(`Model returned no text (stop_reason: ${message.stop_reason})`);
+      }
+      const parsed = JSON.parse(textBlock.text);
 
       if (!parsed.days || !Array.isArray(parsed.days) || !parsed.packingList || !Array.isArray(parsed.packingList)) {
         throw new Error('Response missing required fields');
